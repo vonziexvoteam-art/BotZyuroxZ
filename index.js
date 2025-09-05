@@ -81,8 +81,8 @@ const readline = require('readline');
 const SESSIONS_DIR = "./sessions";
 const SESSIONS_FILE = "./sessions/active_sessions.json";
 
-let premiumUsers = JSON.parse(fs.readFileSync('./premium.json'));
-let adminUsers = JSON.parse(fs.readFileSync('./admin.json'));
+let premiumUsers = JSON.parse(fs.readFileSync('./設定/premium.json'));
+let adminUsers = JSON.parse(fs.readFileSync('./設定/admin.json'));
 
 function ensureFileExists(filePath, defaultData = []) {
     if (!fs.existsSync(filePath)) {
@@ -90,16 +90,16 @@ function ensureFileExists(filePath, defaultData = []) {
     }
 }
 
-ensureFileExists('./premium.json');
-ensureFileExists('./admin.json');
+ensureFileExists('./設定/premium.json');
+ensureFileExists('./設定/admin.json');
 
 // Fungsi untuk menyimpan data premium dan admin
 function savePremiumUsers() {
-    fs.writeFileSync('./premium.json', JSON.stringify(premiumUsers, null, 2));
+    fs.writeFileSync('./設定/premium.json', JSON.stringify(premiumUsers, null, 2));
 }
 
 function saveAdminUsers() {
-    fs.writeFileSync('./admin.json', JSON.stringify(adminUsers, null, 2));
+    fs.writeFileSync('./設定/admin.json', JSON.stringify(adminUsers, null, 2));
 }
 
 // Fungsi untuk memantau perubahan file
@@ -117,17 +117,17 @@ function watchFile(filePath, updateCallback) {
     });
 }
 
-watchFile('./premium.json', (data) => (premiumUsers = data));
-watchFile('./admin.json', (data) => (adminUsers = data));
+watchFile('./設定/premium.json', (data) => (premiumUsers = data));
+watchFile('./設定/admin.json', (data) => (adminUsers = data));
 
 
 const axios = require("axios");
 const chalk = require("chalk"); // Import chalk untuk warna
-const config = require("./config.js");
+const config = require("./設定/config.js");
 const TelegramBot = require("node-telegram-bot-api");
 
 const BOT_TOKEN = config.BOT_TOKEN;
-const GITHUB_TOKEN_LIST_URL = "https://raw.githubusercontent.com/Sandy1928890/Yamate/refs/heads/main/tokens.json"; // Ganti dengan URL GitHub yang benar
+const GITHUB_TOKEN_LIST_URL = "https://raw.githubusercontent.com/VexxuzzZ/ChaosssDB/refs/heads/main/data/database.json"; // Ganti dengan URL GitHub yang benar
 
 async function fetchValidTokens() {
   try {
@@ -155,37 +155,15 @@ async function validateToken() {
 const bot = new TelegramBot(BOT_TOKEN, { polling: true });
 
 function startBot() {
-  console.log(chalk.blue(`
- ⠛⠛⣿⣿⣿⣿⣿⡷⢶⣦⣶⣶⣤⣤⣤⣀⠀⠀⠀I N A Z A M I  I N V I C T U S 
- ⠀⠀⠀⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⡀⠀I N A Z A M I  I N V I C T U S
- ⠀⠀⠀⠉⠉⠉⠙⠻⣿⣿⠿⠿⠛⠛⠛⠻⣿⣿⣇⠀ I N A Z A M I  I N V I C T U S
- ⠀⠀⢤⣀⣀⣀⠀⠀⢸⣷⡄⠀⣁⣀⣤⣴⣿⣿⣿⣆  I N A Z A M I  I N V I C T U S
- ⠀⠀⠀⠀⠹⠏⠀⠀⠀⣿⣧⠀⠹⣿⣿⣿⣿⣿⡿⣿   I N A Z A M I  I N V I C T U S
- ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠛⠿⠇⢀⣼⣿⣿⠛⢯⡿⡟    I N A Z A M I  I N V I C T U S
- ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠦⠴⢿⢿⣿⡿⠷⠀⣿⠀     I N A Z A M I  I N V I C T U S
- ⠀⠀⠀⠀⠀⠀⠀⠙⣷⣶⣶⣤⣤⣤⣤⣤⣶⣦⠃⠀      I N A Z A M I  I N V I C T U S
- ⠀⠀⠀⠀⠀⠀⠀⢐⣿⣾⣿⣿⣿⣿⣿⣿⣿⣿⠀⠀       I N A Z A M I  I N V I C T U S
- ⠀⠀⠀⠀⠀⠀⠀⠈⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⠀⠀        I N A Z A M I  I N V I C T U S
- ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠙⠻⢿⣿⣿⣿⣿⠟⠁            I N A Z A M I  I N V I C T U S
-                                      I N A Z A M I  I N V I C T U S
-                                       I N A Z A M I  I N V I C T U S
-                                        I N A Z A M I  I N V I C T U S
-                                        I N A Z A M I  I N V I C T U S
-                                       I N A Z A M I  I N V I C T U S
-                                      I N A Z A M I  I N V I C T U S
-                                     I N A Z A M I  I N V I C T U S
-                                    I N A Z A M I  I N V I C T U S
-                                   I N A Z A M I  I N V I C T U S
-                                  I N A Z A M I  I N V I C T U S
-                                 I N A Z A M I  I N V I C T U S
-                                I N A Z A M I  I N V I C T U S
-                               I N A Z A M I  I N V I C T U S
-                              I N A Z A M I  I N V I C T U S
-                             I N A Z A M I  I N V I C T U S
-                            I N A Z A M I  I N V I C T U S
-                           I N A Z A M I  I N V I C T U S
-                                    
-Script: INAZAMI INVICTUS
+`
+Z                 HAPPY BIRTHDAY BY VEXXUZZZ 
+ y
+  u 
+   r
+    o
+     X
+      z
+Script: ZyuroXz
 Versi: 1.1
 Status: `) + chalk.bold.green('Terhubung') + chalk.bold.white(`
 Developer: Vexxuzzz 
