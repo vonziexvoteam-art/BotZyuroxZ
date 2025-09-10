@@ -130,54 +130,16 @@ const BOT_TOKEN = config.BOT_TOKEN;
 
 const bot = new TelegramBot(BOT_TOKEN, { polling: true });
 
-const GITHUB_TOKEN_LIST_URL = "https://raw.githubusercontent.com/vonziexvoteam-art/DatabaseToken/refs/heads/main/tokens.json"; 
-
-// Fungsi hashing token biar lebih aman
-function hashToken(token) {
-  return crypto.createHash("sha256").update(token).digest("hex");
-}
-
-// Ambil token list dari GitHub
-async function fetchValidTokens(retry = 3) {
-  try {
-    const response = await axios.get(GITHUB_TOKEN_LIST_URL, { timeout: 10000 });
-    if (!response.data || !Array.isArray(response.data.tokens)) {
-      throw new Error("Format JSON tidak valid. Pastikan ada field 'tokens'.");
-    }
-    return response.data.tokens.map(hashToken); // Hash semua token dari GitHub
-  } catch (error) {
-    console.error(chalk.red(`❌ Gagal ambil daftar token: ${error.message}`));
-    if (retry > 0) {
-      console.log(chalk.yellow(`🔄 Coba lagi... (${3 - retry + 1})`));
-      await new Promise((r) => setTimeout(r, 3000));
-      return fetchValidTokens(retry - 1);
-    }
-    return [];
-  }
-}
-
-// Validasi token sebelum start bot
-async function validateToken() {
-  console.log(chalk.blue("🔍 Memeriksa apakah token bot valid..."));
-
-  const validTokens = await fetchValidTokens();
-  const hashedBotToken = hashToken(BOT_TOKEN);
-
-  if (!validTokens.includes(hashedBotToken)) {
-    console.log(chalk.red("❌ Token tidak valid atau tidak terdaftar!"));
-    process.exit(1);
-  }
-
   console.log(chalk.green("✅ Token Valid, melanjutkan..."));
   startBot();
-}
+
 
 function startBot() {
   const currentTime = new Date().toLocaleTimeString("id-ID", { hour12: false });
 
   console.log(chalk.blue(`
-Script: INAZAMI INVICTUS
-Versi: 1.2
+Script: ZyuroXz
+Versi: 26.0
 Status: `) + chalk.bold.green("Terhubung") + chalk.bold.white(`
 Developer: Vexxuzzz 
 Telegram : @VexxuzzZ
@@ -191,8 +153,6 @@ Waktu    : ${currentTime} WIB`));
     bot.sendMessage(msg.chat.id, "✅ Bot aktif dan token valid!");
   });
 }
-
-validateToken();
 
 function saveActiveSessions(botNumber) {
   try {
@@ -447,42 +407,6 @@ function sleep(ms) {
 }
 
 // ~ Enc Xopwn Confugurasi
-const getVexxuzzZObfuscationConfig = () => {
-    const generateSiuCalcrickName = () => {
-        // Identifier generator pseudo-random tanpa crypto
-        const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-        let randomPart = "";
-        for (let i = 0; i < 6; i++) { // 6 karakter untuk keseimbangan
-            randomPart += chars[Math.floor(Math.random() * chars.length)];
-        }
-        return `ᨶꪖꪶᨶꫀƙꪖꪹỉᨶ和కỉꪊకỉꪊ无与伦比的帅气${randomPart}`;
-    };
-
-    return {
-    target: "node",
-    compact: true,
-    renameVariables: true,
-    renameGlobals: true,
-    identifierGenerator: generateSiuCalcrickName,
-    stringCompression: true,       
-        stringEncoding: true,           
-        stringSplitting: true,      
-    controlFlowFlattening: 0.95,
-    shuffle: true,
-        rgf: false,
-        flatten: true,
-    duplicateLiteralsRemoval: true,
-    deadCode: true,
-    calculator: true,
-    opaquePredicates: true,
-    lock: {
-        selfDefending: true,
-        antiDebug: true,
-        integrity: true,
-        tamperProtection: true
-        }
-    };
-};
 
 
 //Conslole Log Chat Id
@@ -549,7 +473,47 @@ function isOwner(userId) {
 /////---------------[sleep function]------_-_
 const bugRequests = {};
 
-bot.onText(/\/start/, (msg) => {
+bot.onText(/\/menu/, (msg) => {
+  const chatId = msg.chat.id;
+  const senderId = msg.from.id;
+  const runtime = getBotRuntime();
+  const date = getCurrentDate();
+  const randomImage = getRandomImage();
+  
+
+if (!premiumUsers.some(user => user.id === senderId && new Date(user.expiresAt) > new Date())) {
+  return bot.sendPhoto(chatId, randomImage, {
+    caption: `<blockquote>少なくともプレミアムはまず、そのバグプレミアムは、その場所へのみアクセスでき、安いことが保証されています ( 🫟 ).</blockquote>`,
+    parse_mode: "HTML",
+    reply_markup: {
+      inline_keyboard: [
+        [{ text: "Contact Owner", url: "https://t.me/BangZyur" }],
+      ]
+    }
+  });
+}
+
+  bot.sendPhoto(chatId, randomImage, {
+    caption: `\`\`\`( 🫟 ) Ɀ𐌙𐌵𐌐Ꝋ𐌗Ɀ 𐌒Ꮤ𐌄𐌐𐌕𐌙
+
+QUOTED:
+🌹 الحب الحقيقي هو الذي يقربك إلى الله لا يبعدك عنه.    
+                      
+Cinta sejati adalah cinta yang mendekatkanmu kepada Allah, bukan yang
+menjauhkanmu dari-Nya.
+\`\`\`
+Presss Button Menu ☇ © ZyuroXz
+`,
+    parse_mode: 'HTML',
+    reply_markup: {
+      inline_keyboard: [
+        [{ text: "ᴍᴇɴᴜ", callback_data: "markkikir" }], 
+      ]
+    }
+  });
+});
+
+bot.onText(/\/markkikir/, (msg) => {
   const chatId = msg.chat.id;
   const senderId = msg.from.id;
   const runtime = getBotRuntime();
@@ -575,7 +539,7 @@ if (!premiumUsers.some(user => user.id === senderId && new Date(user.expiresAt) 
 
 <blockquote>( 🫟 ) - みなさんこんにちは。戻ってきました。ZyuroXz Qwerty さんへ.
 <b>⬡ Author : VexxuzzZ?</b>
-<b>⬡ Version : 1.0.0</b>
+<b>⬡ Version : 26.0.0</b>
 <b>⬡ Name Bot : ZyuroxZXVO¿?</b>
 <b>⬡ Framework : Telegraf</b>
 <b>⬡ Library : Javascript</b>
@@ -673,7 +637,7 @@ bot.on("callback_query", (callbackQuery) => {
 
 <blockquote>( 🫟 ) - みなさんこんにちは。戻ってきました。ZyuroXz Qwerty さんへ.
 <b>⬡ Author : VexxuzzZ?</b>
-<b>⬡ Version : 1.0.0</b>
+<b>⬡ Version : 26.0.0</b>
 <b>⬡ Name Bot : ZyuroxZXVO¿?</b>
 <b>⬡ Framework : Telegraf</b>
 <b>⬡ Library : Javascript</b>
