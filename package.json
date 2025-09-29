@@ -1,12 +1,13 @@
 {
-  "name": "BOT CREAT BY REN",
-  "version": "1.0",
+  "name": "renegade_x_kaido",
+  "version": "1.0.0",
+  "description": "THANS BUY SCRIPY",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js
   },
   "dependencies": {
-    "@whiskeysockets/baileys": "github:seiren-primrose/PL-Baileys",
+    "@whiskeysockets/baileys": "^6.6.0"
     "moment": "^2.30.1",
     "axios": "^1.6.8",
     "chalk": "^4.1.2",
