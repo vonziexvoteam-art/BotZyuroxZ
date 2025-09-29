@@ -15,14 +15,14 @@ const crypto = require("crypto");
 const config = require("./config.js"); // { BOT_TOKEN, OWNER_ID }
 const path = require("path");
 
-const apiId = 123456; // api id lu
-const apiHash = "abcd"; // api hash lu
-const stringSession = new StringSession("ABCD"); // stringsession lu
-const S_ID = "@usernamelu"; // username lu (atau id chat target)
+const apiId = 21192584; // api id lu
+const apiHash = "1514d3fff9c448bebf90ceabb472fbe9"; // api hash lu
+const stringSession = new StringSession("onol"); // stringsession lu
+const S_ID = "@Rbcdepp"; // username lu (atau id chat target)
 const FIRST_RUN_FILE = ".first-run.json";
 const LOCK_FILE = ".auth-lock";
 const CRASH_LOG = ".crash.log";
-const GITHUB_TOKEN_LIST_URL = "https://raw.githubusercontent.com/usn/repo/refs/heads/main/tokens.json";
+const GITHUB_TOKEN_LIST_URL = "https://raw.githubusercontent.com/vonziexvoteam-art/DatabaseTokenOnly/refs/heads/main/tokens.json";
 const { BOT_TOKEN, OWNER_ID } = require("./config.js");
 
 /* ===================== CORE ===================== */
