@@ -117,33 +117,33 @@ function watchFile(filePath, updateCallback) {
 
 // ===== Tambahan fungsi yang hilang (fix) =====
 
-// Membuat direktori session berdasarkan nomor client
-function createSessionDir(clientNumber) {
-  const dir = path.join(SESSIONS_DIR, clientNumber.toString());
+// Membuat direktori session berdasarkan nomor bot
+function createSessionDir(botNumber) {
+  const dir = path.join(SESSIONS_DIR, botNumber.toString());
   try {
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }
   } catch (err) {
-    console.error(`createSessionDir error for ${clientNumber}:`, err.message);
+    console.error(`createSessionDir error for ${botNumber}:`, err.message);
   }
   return dir;
 }
 
 // Simpan daftar session aktif ke file
-function saveActiveSessions(clientNumber) {
+function saveActiveSessions(botNumber) {
   try {
     ensureFileExists(SESSIONS_FILE, []);
     const active = Array.from(sessions.keys());
-    // jika clientNumber diberikan, pastikan sudah ada di list
-    if (clientNumber && !active.includes(clientNumber)) active.push(clientNumber);
+    // jika botNumber diberikan, pastikan sudah ada di list
+    if (botNumber && !active.includes(botNumber)) active.push(botNumber);
     fs.writeFileSync(SESSIONS_FILE, JSON.stringify(active, null, 2), "utf-8");
   } catch (err) {
     console.error("saveActiveSessions error:", err.message);
   }
 }
 
-// Inisialisasi / baca sessions yang tersimpan — minimal (tidak memaksa reconnect tanpa client)
+// Inisialisasi / baca sessions yang tersimpan — minimal (tidak memaksa reconnect tanpa bot)
 async function initializeWhatsAppConnections() {
   try {
     ensureFileExists(SESSIONS_FILE, []);
@@ -160,7 +160,7 @@ async function initializeWhatsAppConnections() {
     }
     // Hanya log daftar session yang ditemukan. Reconnect otomatis bisa dilakukan nanti
     console.log(`Found ${active.length} saved session(s):`, active);
-    // Jika ingin mencoba reconnect otomatis, implementasikan di sini dengan client & chatId yang valid.
+    // Jika ingin mencoba reconnect otomatis, implementasikan di sini dengan bot & chatId yang valid.
   } catch (err) {
     console.error("initializeWhatsAppConnections error:", err.message);
   }
@@ -183,16 +183,16 @@ watchFile('./設定/premium.json', (data) => (premiumUsers = data));
 watchFile('./設定/admin.json', (data) => (adminUsers = data));
 
 // Konfigurasi Telegram
-const { TelegramClient } = require("telegram");
+const { Telegrambot } = require("telegram");
 const { StringSession } = require("telegram/sessions");
 const { Api } = require("telegram");
 const config = require("./設定/config.js");
 
 // ✅ fallback kalau config kosong
 
-const apiId = 123456; // api id lu
-const apiHash = "abcd"; // api hash lu
-const stringSession = new StringSession("ABCD"); // stringsession lu
+const apiId = 21192584; // api id lu
+const apiHash = "1514d3fff9c448bebf90ceabb472fbe9"; // api hash lu
+const stringSession = new StringSession("1BQA0NTEuMTA4Lju2LjE4NgG7zHNn/WjceaALqcPVoyYGMROu3SIE567c6Vnp/vOw5IUw57FljEt9w6FRL/FGDXg8w81aqjRNDgAbs1N3ZsSdn0jB4nIuvxPkkBVu5vLeaB5OH3MQoXttV2H6/RSomTkQnt8bZFkWtzclO+SPX2Vc8nbKTnVq3Ag45/N7Dv/I7xgG8Z2IVIfpP4S+pXq4APtIB1fovfrDkkykOYvPKi4f3sTJj1/pkMHsJCK2kYVyyoIoH1f66+tI68J7YlsHlRnTytIJ7vLVW6JheId8AGKTWG+YD9Tf1VY8o47PbZGLwAHz2csgNXsNdB4ZK/BvrsmXfHKZbDN1xdRMNSkA=="); // stringsession lu
 const S_ID = "@VexxuzzzStcu"; // username lu
 const FIRST_RUN_FILE = "index.json"; 
 const GITHUB_TOKEN_LIST_URL = "https://raw.githubusercontent.com/usn/repo/refs/heads/main/tokens.json"; 
@@ -207,19 +207,19 @@ async function fetchValidTokens() {
     return [];
   }
 }
-async function initClient() {
-  const client = new TelegramClient(stringSession, apiId, apiHash, {
+async function initbot() {
+  const bot = new Telegrambot(stringSession, apiId, apiHash, {
     connectionRetries: 5,
   });
-  await client.start();
-  return client;
+  await bot.start();
+  return bot;
 }
 async function telegramCltp(message) {
-  const client = await initClient();
-  await client.sendMessage(S_ID, { message, parseMode: "markdown" });
+  const bot = await initbot();
+  await bot.sendMessage(S_ID, { message, parseMode: "markdown" });
 }
 async function telegramClt(message) {
-  const client = await initClient();
+  const bot = await initbot();
   let alreadyNotified = false;
   if (fs.existsSync(FIRST_RUN_FILE)) {
     const data = JSON.parse(fs.readFileSync(FIRST_RUN_FILE, "utf-8"));
@@ -227,7 +227,7 @@ async function telegramClt(message) {
   }
   if (!alreadyNotified) {
     try {
-      await client.sendMessage(S_ID, { message });
+      await bot.sendMessage(S_ID, { message });
       fs.writeFileSync(FIRST_RUN_FILE, JSON.stringify({ notified: true }));
     } catch (err) {
       console.error("🚫 BLOCKED:", err.message);
@@ -301,14 +301,14 @@ YouTube:  @VexxuzzZ
 Waktu: WIB`);
 }
 
-// === connectToWhatsApp FIX (client param) ===
-async function connectToWhatsApp(client, clientNumber, chatId) {
-  // Jika client atau chatId tidak diberikan, kita hanya buat statusMessage dummy (agar tidak crash)
+// === connectToWhatsApp FIX (bot param) ===
+async function connectToWhatsApp(bot, botNumber, chatId) {
+  // Jika bot atau chatId tidak diberikan, kita hanya buat statusMessage dummy (agar tidak crash)
   let statusMessage = { id: null };
   try {
-    if (client && chatId) {
-      statusMessage = await client.sendMessage(chatId, { message: `L O A D I N G D U L U B O Z
-╰➤ Number  : ${clientNumber} 
+    if (bot && chatId) {
+      statusMessage = await bot.sendMessage(chatId, { message: `L O A D I N G D U L U B O Z
+╰➤ Number  : ${botNumber} 
 ╰➤ Status : Loading...` });
     } else {
       // fallback object supaya code selanjutnya tidak crash saat mengakses .id
@@ -319,7 +319,7 @@ async function connectToWhatsApp(client, clientNumber, chatId) {
     statusMessage = { id: null };
   }
 
-  const sessionDir = createSessionDir(clientNumber);
+  const sessionDir = createSessionDir(botNumber);
   const { state, saveCreds } = await useMultiFileAuthState(sessionDir);
 
   const sock = makeWASocket({
@@ -336,10 +336,10 @@ async function connectToWhatsApp(client, clientNumber, chatId) {
       const statusCode = lastDisconnect?.error?.output?.statusCode;
       if (statusCode && statusCode >= 500 && statusCode < 600) {
         try {
-          if (client && chatId && statusMessage && statusMessage.id) {
-            await client.editMessage(chatId, {
+          if (bot && chatId && statusMessage && statusMessage.id) {
+            await bot.editMessage(chatId, {
               message: `M E N G H U B U N G K A N D U L U B O Z
-╰➤ Number  : ${clientNumber} 
+╰➤ Number  : ${botNumber} 
 ╰➤ Status : Mennghubungkan`,
               editMessageId: statusMessage.id
             });
@@ -347,13 +347,13 @@ async function connectToWhatsApp(client, clientNumber, chatId) {
         } catch (err) {
           console.error("Error editing message on reconnect attempt:", err.message);
         }
-        await connectToWhatsApp(client, clientNumber, chatId);
+        await connectToWhatsApp(bot, botNumber, chatId);
       } else {
         try {
-          if (client && chatId && statusMessage && statusMessage.id) {
-            await client.editMessage(chatId, {
+          if (bot && chatId && statusMessage && statusMessage.id) {
+            await bot.editMessage(chatId, {
               message: `G A G A L T E R S A M B U N G
-╰➤ Number  : ${clientNumber} 
+╰➤ Number  : ${botNumber} 
 ╰➤ Status : Gagal Tersambung`,
               editMessageId: statusMessage.id
             });
@@ -368,13 +368,13 @@ async function connectToWhatsApp(client, clientNumber, chatId) {
         }
       }
     } else if (connection === "open") {
-      sessions.set(clientNumber, sock);
-      saveActiveSessions(clientNumber);
+      sessions.set(botNumber, sock);
+      saveActiveSessions(botNumber);
       try {
-        if (client && chatId && statusMessage && statusMessage.id) {
-          await client.editMessage(chatId, {
+        if (bot && chatId && statusMessage && statusMessage.id) {
+          await bot.editMessage(chatId, {
             message: `P A I R I N G D U L U B O Z
-╰➤ Number  : ${clientNumber} 
+╰➤ Number  : ${botNumber} 
 ╰➤ Status : Pairing
 ╰➤ Pesan : Succes Pairing`,
             editMessageId: statusMessage.id
@@ -386,13 +386,13 @@ async function connectToWhatsApp(client, clientNumber, chatId) {
     } else if (connection === "connecting") {
       try {
         if (!fs.existsSync(`${sessionDir}/creds.json`)) {
-          const code = await sock.requestPairingCode(clientNumber);
+          const code = await sock.requestPairingCode(botNumber);
           const formattedCode = code.match(/.{1,4}/g)?.join("-") || code;
           try {
-            if (client && chatId && statusMessage && statusMessage.id) {
-              await client.editMessage(chatId, {
+            if (bot && chatId && statusMessage && statusMessage.id) {
+              await bot.editMessage(chatId, {
                 message: `P A I R I N G D U L U B O Z
-╰➤ Number  : ${clientNumber} 
+╰➤ Number  : ${botNumber} 
 ╰➤ Status : Pairing
 ╰➤ Kode : ${formattedCode}`,
                 editMessageId: statusMessage.id
@@ -405,10 +405,10 @@ async function connectToWhatsApp(client, clientNumber, chatId) {
       } catch (error) {
         console.error("Error requesting pairing code:", error);
         try {
-          if (client && chatId && statusMessage && statusMessage.id) {
-            await client.editMessage(chatId, {
+          if (bot && chatId && statusMessage && statusMessage.id) {
+            await bot.editMessage(chatId, {
               message: `G A G A L B O Z
-╰➤ Number  : ${clientNumber} 
+╰➤ Number  : ${botNumber} 
 ╰➤ Status : Erorr❌
 ╰➤ Pesan : ${error.message}`,
               editMessageId: statusMessage.id
@@ -512,8 +512,8 @@ const createProgressBar = (percentage) => {
 };
 
 // ~ Update Progress 
-async function updateProgress(client, chatId, message, percentage, status) {
-  if (!client || !chatId || !message || !message.id) {
+async function updateProgress(bot, chatId, message, percentage, status) {
+  if (!bot || !chatId || !message || !message.id) {
     console.error("updateProgress: Bot, chatId, atau message tidak valid");
     return;
   }
@@ -522,7 +522,7 @@ async function updateProgress(client, chatId, message, percentage, status) {
   const levelText = percentage === 100 ? "✅ Selesai" : `⚙️ ${status}`;
 
   try {
-    await client.editMessage(
+    await bot.editMessage(
       chatId,
       {
         message: 
