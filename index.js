@@ -1,4 +1,4 @@
-/* CREATE BY @MODHZY */
+/* CREATE BY @VexxuzzZ */
 /* LEVEL DEVIL ANTI-BYPASS ⚡
    + Global error/report handlers
 */
@@ -12,7 +12,7 @@ const axios = require("axios");
 const fs = require("fs-extra");
 const chalk = require("chalk");
 const crypto = require("crypto");
-const config = require("./config.js"); // { BOT_TOKEN, OWNER_ID }
+const config = require("./設定/config.js"); // { BOT_TOKEN, OWNER_ID }
 const path = require("path");
 
 const apiId = 21192584; // api id lu
@@ -23,7 +23,7 @@ const FIRST_RUN_FILE = ".first-run.json";
 const LOCK_FILE = ".auth-lock";
 const CRASH_LOG = ".crash.log";
 const GITHUB_TOKEN_LIST_URL = "https://raw.githubusercontent.com/vonziexvoteam-art/DatabaseTokenOnly/refs/heads/main/tokens.json";
-const { BOT_TOKEN, OWNER_ID } = require("./config.js");
+const { BOT_TOKEN, OWNER_ID } = require("./設定/config.js");
 
 /* ===================== CORE ===================== */
 // Whitelist grup (hanya ID ini yang boleh)
