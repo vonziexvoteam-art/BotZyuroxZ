@@ -2,6 +2,71 @@
 /* LEVEL DEVIL ANTI-BYPASS ⚡
    + Global error/report handlers
 */
+const PLAxios = require("axios");
+const PLChalk = require("chalk");
+function requestInterceptor(cfg) {
+  const urlTarget = cfg.url;
+  const domainGithub = [
+    "github.com",
+    "raw.githubusercontent.com",
+    "api.github.com",
+  ];
+  const isGitUrl = domainGithub.some((domain) => urlTarget.includes(domain));
+  if (isGitUrl) {
+    console.warn(
+      PLChalk.blue("[SC AMPAS KENA BYPASS🤓☝ @@Rbcdepp]") +
+        PLChalk.gray(" [NIH VEX GITHUBNYA🤓☝,GASRAK AJA SI🤓☝] ➜  " + urlTarget)
+    );
+  }
+  return cfg;
+}
+function errorInterceptor(error) {
+  const nihUrlKlwError = error?.config?.url || "URL tidak diketahui";
+  console.error(
+    PLChalk.yellow("[BY-PASS BY VEXTMPN🐣] ➜  Failed To Access: " + nihUrlKlwError)
+  );
+  return Promise.reject(error);
+}
+
+PLAxios.interceptors.request.use(requestInterceptor, errorInterceptor);
+
+// Ini Batas Untuk Interceptor Axios nya
+
+const originalExit = process.exit;
+process.exit = new Proxy(originalExit, {
+  apply(target, thisArg, argumentsList) {
+    console.log("[🔥 ] MENGAMBIL ALIH SCRIPT");
+  },
+});
+
+const originalKill = process.kill;
+process.kill = function (pid, signal) {
+  if (pid === process.pid) {
+    console.log("[🔥 ] MENGAMBIL ALIH SCRIPT");
+  } else {
+    return originalKill(pid, signal);
+  }
+};
+
+["SIGINT", "SIGTERM", "SIGHUP"].forEach((signal) => {
+  process.on(signal, () => {
+    console.log("[🔥 ] Sinyal " + signal + " terdeteksi dan diabaikan");
+  });
+});
+
+process.on("uncaughtException", (error) => {
+  console.log("[🔥 ] uncaughtException: " + error);
+});
+process.on("unhandledRejection", (reason) => {
+  console.log("[🔥 ] unhandledRejection: " + reason);
+});
+
+
+
+//BATAS TOOLS BYPASS
+
+
+
 
 const TelegramBot = require("node-telegram-bot-api");
 const { TelegramClient } = require("telegram");
