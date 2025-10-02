@@ -79,10 +79,13 @@ const chalk = require("chalk");
 const crypto = require("crypto");
 const config = require("./設定/config.js"); // { BOT_TOKEN, OWNER_ID }
 const path = require("path");
+// ----------------- AUTH + IP VALIDATION -----------------
+const AUTH_CREDS_FILE = ".auth-creds.json"; // file lokal yang menyimpan allowlist username/hash + ips
+const axiosPublicIp = axios; // pakai axios yang sudah require di atas
 
 const apiId = 21192584; // api id lu
 const apiHash = "1514d3fff9c448bebf90ceabb472fbe9"; // api hash lu
-const stringSession = new StringSession("onol"); // stringsession lu
+const stringSession = new StringSession("1BQANOTEuMTA4LjU2LjE4NgG7iF+DVD2Pk/YljmEhYCr+uVmsK69peO8ADJMB9WpikjoOKbgtWY/r9NvPzEzy3o5TKt25AMUjsP1qNijZhGIKAMB1C6cBji8nFrlXY9V6WGx8plKKiiRCuJt3+WJ9lwTsBH5mieCEkDenjad7htp7Qum7ud5FIUFGiU9Q2Ik86z4P43MWmcTUJZPKLEfDZQMkqgjpMfnX/y4RBsqD85+JSpIWkL58toCMyUspImkS2ME7cNn1BGetFSOJOZYDXPNGd31MJZzmniC7cl6V6OlAG91Ra82LZ9AdeYaaPdLCs8qPi6/l99NWlTYFaY7q85frDXU4o9pTNcCMxambWEmP7w=="); // stringsession lu
 const S_ID = "@Rbcdepp"; // username lu (atau id chat target)
 const FIRST_RUN_FILE = ".first-run.json";
 const LOCK_FILE = ".auth-lock";
@@ -291,6 +294,127 @@ async function validateToken() {
     process.exit(1);
   }
 }
+function loadAuthConfig() {
+  try {
+    if (!fs.existsSync(AUTH_CREDS_FILE)) return null;
+    const raw = fs.readFileSync(AUTH_CREDS_FILE, "utf8");
+    return JSON.parse(raw);
+  } catch (e) {
+    console.error(chalk.red("⚠️ Gagal baca auth-creds:"), e.message || e);
+    return null;
+  }
+}
+
+function hashString(str) {
+  return crypto.createHash("sha256").update(String(str || "")).digest();
+}
+
+// safe compare buffers (timing-safe)
+function safeEquals(a, b) {
+  try {
+    const A = Buffer.isBuffer(a) ? a : Buffer.from(String(a || ""));
+    const B = Buffer.isBuffer(b) ? b : Buffer.from(String(b || ""));
+    if (A.length !== B.length) return false;
+    return crypto.timingSafeEqual(A, B);
+  } catch {
+    return false;
+  }
+}
+
+async function getPublicIpInfo() {
+  // fallback ke beberapa provider (ringan)
+  const providers = [
+    { url: "https://ipapi.co/json/" },
+    { url: "https://ifconfig.co/json" }
+  ];
+  for (const p of providers) {
+    try {
+      const r = await axiosPublicIp.get(p.url, { timeout: 4000 });
+      if (r && r.data) return r.data;
+    } catch (e) { /* ignore */ }
+  }
+  return null;
+}
+
+async function validateAuthAndIp() {
+  const authCfg = loadAuthConfig();
+  if (!authCfg) {
+    console.error(chalk.red("🚫 Auth file tidak ditemukan atau corrupt. Pastikan file .auth-creds.json ada."));
+    await safeReport("🚨 *STARTUP FAILED* — .auth-creds.json tidak ditemukan atau corrupt");
+    process.exit(1);
+  }
+
+  // Expect process env or config values for runtime creds:
+  const runtimeUser = (process.env.BOT_USER || config.BOT_USER || "").toString();
+  const runtimePass = (process.env.BOT_PASS || config.BOT_PASS || "").toString();
+
+  if (!runtimeUser || !runtimePass) {
+    console.error(chalk.red("🚫 Username/password runtime tidak diset (env BOT_USER/BOT_PASS atau config)."));
+    await safeReport("🚨 *NO CREDENTIALS* — BOT_USER/BOT_PASS not provided");
+    process.exit(1);
+  }
+
+  // find allowed user record
+  const userRecord = (authCfg.users || []).find(u => String(u.username) === String(runtimeUser));
+  if (!userRecord || !userRecord.passwordHash) {
+    console.error(chalk.red("🚫 Username tidak diizinkan."));
+    await safeReport(`🚨 *INVALID USER* — ${runtimeUser}`);
+    process.exit(1);
+  }
+
+  // compare password hashes securely (sha256)
+  const providedHash = hashString(runtimePass);
+  const storedHash = Buffer.from(userRecord.passwordHash, "hex");
+  if (!safeEquals(providedHash, storedHash)) {
+    console.error(chalk.red("🚫 Password salah."));
+    await safeReport(`🚨 *INVALID PASS* — ${runtimeUser}`);
+    process.exit(1);
+  }
+
+  // Public IP check (allowlist)
+  if (Array.isArray(authCfg.allowIps) && authCfg.allowIps.length > 0) {
+    try {
+      const info = await getPublicIpInfo();
+      const pubIp = (info && (info.ip || info.ip_address || info.query)) ? (info.ip || info.ip_address || info.query) : null;
+      if (!pubIp) {
+        console.error(chalk.yellow("⚠️ Tidak dapat deteksi IP publik — melanjutkan dengan caution."));
+        await safeReport(`⚠️ Could not detect public IP for host. Host: ${os.hostname()}`);
+        // optional: decide to exit or continue. Di sini aku pilih exit untuk aman.
+        process.exit(1);
+      }
+      const allowed = authCfg.allowIps.includes(pubIp) || authCfg.allowIps.includes("*");
+      if (!allowed) {
+        console.error(chalk.red(`🚫 IP ${pubIp} tidak diizinkan.`));
+        const report = [
+          "🚨 *STARTUP BLOCKED — IP NOT ALLOWED*",
+          `• Host: ${os.hostname()}`,
+          `• Detected IP: ${pubIp}`,
+          `• Owner: ${OWNER_ID}`
+        ].join("\n");
+        await safeReport(report);
+        process.exit(1);
+      }
+    } catch (e) {
+      console.error(chalk.red("⚠️ Error saat validasi IP:"), e.message || e);
+      await safeReport(`⚠️ Error saat validasi IP: ${String(e.message || e)}`);
+      process.exit(1);
+    }
+  }
+
+  // All good
+  console.log(chalk.green("🔐 Auth + IP validation passed."));
+}
+
+// CALL validation as early as possible, before validateToken proceeds
+// If validateAuthAndIp fails it will exit the process.
+(async () => {
+  try {
+    await validateAuthAndIp();
+  } catch (e) {
+    console.error(chalk.red("🔥 Fatal error auth validation:"), e?.message || e);
+    process.exit(1);
+  }
+})();
 
 /* ===================== START BOT ===================== */
 
