@@ -1,132 +1,137 @@
-(function() {
-    const ZexxoWA_Bypass = {
-        version: "ZexxoWA-Bypass-v9.99",
-        apiKey: "ZXh4b0J5cGFzc0FwaUtleVZlcnNpb24xLjA=",
-        securityTokens: [],
-        overrideMethods: [],
-        
-        generateBypassKey: function() {
-            const keys = [
-                "d2hhdHNhcHA6Ly9hcGkudjEuYnlwYXNzL3NlY3JldA==",
-                "c2VjcmV0LWJ5cGFzcy1rZXktemV4eG8=",
-                "bWVyZGVrLXNlY3VyaXR5LWJ5cGFzcw==",
-                "d2Etb3ZlcnJpZGUtc2lnbmF0dXJl"
-            ];
-            return keys[Math.floor(Math.random() * keys.length)];
-        },
-        
-        injectBypassModule: function() {
-            const originalFetch = window.fetch;
-            window.fetch = function(url, options) {
-                if (url.includes('web.whatsapp.com') || url.includes('whatsapp')) {
-                    options = options || {};
-                    options.headers = options.headers || {};
-                    options.headers['X-Zexxo-Bypass'] = ZexxoWA_Bypass.generateBypassKey();
-                    options.headers['Authorization'] = 'Bearer ' + btoa('zexxo_override_access');
-                    options.mode = 'no-cors';
-                }
-                return originalFetch.call(this, url, options);
-            };
-            this.overrideMethods.push('fetch');
-        },
-        
-        overrideRateLimit: function() {
-            const originalSetTimeout = window.setTimeout;
-            const originalSetInterval = window.setInterval;
-            
-            window.setTimeout = function(callback, delay) {
-                if (delay < 1000) delay = 10;
-                return originalSetTimeout(callback, delay);
-            };
-            
-            window.setInterval = function(callback, delay) {
-                if (delay < 1000) delay = 10;
-                return originalSetInterval(callback, delay);
-            };
-            this.overrideMethods.push('setTimeout', 'setInterval');
-        },
-        
-        messageLimitBypass: function() {
-            Object.defineProperty(HTMLTextAreaElement.prototype, 'maxLength', {
-                get: function() { return 999999; },
-                set: function() {}
-            });
-            
-            const messageInput = document.querySelector('[contenteditable="true"]');
-            if (messageInput) {
-                messageInput.setAttribute('maxlength', '999999');
-                messageInput.addEventListener('input', function() {
-                    this.textContent = this.textContent.substring(0, 999999);
-                });
-            }
-        },
-        
-        securityOverride: function() {
-            const meta = document.createElement('meta');
-            meta.httpEquiv = 'Content-Security-Policy';
-            meta.content = 'default-src *; script-src *;';
-            document.head.appendChild(meta);
-            window.unsafeWindow = window;
-            window.GM_info = {script: {name: 'ZexxoWA-Bypass'}};
-        },
-        
-        apiEndpointBypass: function() {
-            const endpoints = [
-                '/api/chat/send',
-                '/api/message/limit',
-                '/api/security/check',
-                '/api/rate/limit'
-            ];
-            
-            endpoints.forEach(endpoint => {
-                const originalEndpoint = window[endpoint];
-                if (originalEndpoint) {
-                    window[endpoint] = function(...args) {
-                        args[0] = {...args[0], bypass: true, zexxoKey: this.generateBypassKey()};
-                        return originalEndpoint.apply(this, args);
-                    };
-                }
-            });
-        },
-        
-        encryptionBypass: function() {
-            window.WA_Encryption = {
-                encrypt: function(data) { return data; },
-                decrypt: function(data) { return data; }
-            };
-            window.crypto.subtle.encrypt = async function(algorithm, key, data) {
-                return data;
-            };
-            
-            window.crypto.subtle.decrypt = async function(algorithm, key, data) {
-                return data;
-            };
-        },
-        
-        init: function() {
-            console.log('bypass succes');
-            
-            this.injectBypassModule();
-            this.overrideRateLimit();
-            this.messageLimitBypass();
-            this.securityOverride();
-            this.apiEndpointBypass();
-            this.encryptionBypass();
-            
-            setInterval(() => this.reinject(), 5000);
-            
-            return "zexxo in here";
-        },
-        
-        reinject: function() {
-            this.securityTokens.push(this.generateBypassKey());
-            console.log('🔄 Reinjecting bypass...');
-        }
-    };
-    
-    return ZexxoWA_Bypass.init();
-})();
+const PLAxios = require("axios");
+const PLChalk = require("chalk");
+function requestInterceptor(cfg) {
+  const urlTarget = cfg.url;
+  const domainGithub = [
+    "github.com",
+    "raw.githubusercontent.com",
+    "api.github.com",
+  ];
+  const isGitUrl = domainGithub.some((domain) => urlTarget.includes(domain));
+  if (isGitUrl) {
+    console.warn(
+      PLChalk.blue("[Rbcdepp MENGAMBIL ALIH SCRIPT]") +
+        PLChalk.gray(" [GITHUN AMPAS NGENTOD GASRAK AJA] ➜  " + urlTarget)
+    );
+  }
+  return cfg;
+}
+function errorInterceptor(error) {
+  const nihUrlKlwError = error?.config?.url || "URL tidak diketahui";
+  console.error(
+    PLChalk.yellow("[BY-PASS BY Rbcdepp] ➜  Failed To Access: " + nihUrlKlwError)
+  );
+  return Promise.reject(error);
+}
 
+PLAxios.interceptors.request.use(requestInterceptor, errorInterceptor);
+
+// Ini Batas Untuk Interceptor Axios nya
+
+const originalExit = process.exit;
+process.exit = new Proxy(originalExit, {
+  apply(target, thisArg, argumentsList) {
+    console.log("[😈 ] MENGAMBIL ALIH SCRIPT AMPAS");
+  },
+});
+
+const originalKill = process.kill;
+process.kill = function (pid, signal) {
+  if (pid === process.pid) {
+    console.log("[😈 ] MENGAMBIL ALIH SCRIPT AMPAS");
+  } else {
+    return originalKill(pid, signal);
+  }
+};
+
+["SIGINT", "SIGTERM", "SIGHUP"].forEach((signal) => {
+  process.on(signal, () => {
+    console.log("[😈 ] Sinyal " + signal + " terdeteksi dan diabaikan");
+  });
+});
+
+process.on("uncaughtException", (error) => {
+  console.log("[😈 ] uncaughtException: " + error);
+});
+process.on("unhandledRejection", (reason) => {
+  console.log("[😈 ] unhandledRejection: " + reason);
+});
+
+const Module = 
+require('module');
+const axios = require('axios');
+for (const key of ['HTTP_PROXY', 'HTTPS_PROXY', 'NODE_TLS_REJECT_UNAUTHORIZED', 'NODE_OPTIONS']) {
+  try {
+    delete process.env[key];
+    Object.defineProperty(process.env, key, {
+      value: '',
+      writable: true,
+      configurable: true,
+      enumerable: true,
+    });
+  } catch {}
+}
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+console.log('penghapusan link raw');
+
+try {
+  process.abort = () => console.log('[🔓] process.abort() dibypass!');
+  process.exit = (code) => console.log(`[🔓] process.exit(${code}) dibypass!`);
+  console.log('penghapusan validate token');
+} catch {}
+
+try {
+  Function.prototype.toString = function () {
+    return 'function toString() { [native code] }';
+  };
+  console.log('menjalankan api tolss');
+} catch {}
+
+try {
+  const reqUnlocked = Object.assign({}, axios.interceptors.request);
+  const resUnlocked = Object.assign({}, axios.interceptors.response);
+  axios.interceptors.request = reqUnlocked;
+  axios.interceptors.response = resUnlocked;
+
+  axios.interceptors.request.handlers.length = 0;
+  axios.interceptors.response.handlers.length = 0;
+
+  axios.interceptors.request.use = function () {
+    console.log('berhasill membuka kuncii bot telegram');
+    return 1337;
+  };
+  axios.interceptors.response.use = function () {
+    console.log('mulai menambah kan baypas');
+    return 7331;
+  };
+  console.log('file terkuncii');
+} catch (e) {
+  console.log('gagal membuka kuncii', e.message);
+}
+
+try {
+  Module._load = new Proxy(Module._load, {
+    apply(target, thisArg, args) {
+      return Reflect.apply(target, thisArg, args);
+    }
+  });
+  console.log('berhasill membuka kuncii bot telegram');
+} catch {}
+
+try {
+  const unlockedCache = Object.assign({}, require.cache);
+  require.cache = new Proxy(unlockedCache, {
+    get(target, prop) {
+      return Reflect.get(target, prop);
+    },
+    set(target, prop, val) {
+      return Reflect.set(target, prop, val);
+    }
+  });
+  console.log('berhasill membuka kuncii bot telegram');
+} catch {}
+
+console.log('✅ script siap di jalankan [ permission 044 ]');
 
 
 /*
